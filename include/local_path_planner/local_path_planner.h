@@ -9,13 +9,21 @@
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 
 
-struct RoombaState // Roombaの状態を保持
+struct State
 {
     float x; // [m]
     float y; // [m]
     float yaw; // [rad]
     float velocity; // [m/s]
     float yawrate; // [rad/s]
+};
+
+struct DynamicWindow
+{
+    float min_vel;
+    float max_vel;
+    float min_yawrate;
+    float max_yawrate;
 };
 
 class LocalPathPlanner
@@ -25,20 +33,24 @@ public:
     void process();
 
 private:
-    void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);        // local_mapのコールバック関数
-    void local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr&); // local_goalのコールバック関数
-    void pose_callback(const geometry_msgs::PoseStamped::ConstPtr&);        // poseのコールバック関数
-    void roomba_control(float velocity, float yawrate);
+    // 各種コールバック関数
+    void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
+    void local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr&);
+    void pose_callback(const geometry_msgs::PoseStamped::ConstPtr&);
+    void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr&);
 
-    float calc_evaluation();
-    float calc_heading_eval();
-    float calc_dist_eval();
-    float calc_vel_eval();
-    void move();
-    void calc_dynamic_window();
-    void calc_trajectory();
-    void calc_final_input();
-    void dwa_control();
+    void roomba_control(float velocity, float yawrate); // Roombaの制御入力
+    void move(State& state, float velocity, float yawrate); // 予測軌跡作成時における仮想ロボットの移動
+    void calc_trajectory(float velocity, float yawrate); // 予測軌跡の作成
+    float calc_evaluation(std::vector<State> traj); // 評価関数を計算
+    float calc_heading_eval(std::vector<State> traj); // headingの評価関数を計算
+    float calc_dist_eval(std::vector<State> traj); // distの評価関数を計算
+    float calc_vel_eval(std::vector<State> traj); // velocityの評価関数を計算
+
+    void calc_dynamic_window(); // Dynamic Windowを計算
+    void calc_final_input(); // 最適な制御入力を計算 
+    bool can_move(); // ゴールに着くまでTrueを返す
+    // void dwa_control(); 
 
     int hz_; // ループ周波数
     float max_vel_; // 最高並進速度 [m/s]
@@ -50,29 +62,33 @@ private:
     float yawrate_reso_; // 旋回速度解像度 [rad/s]
     float dt_; // 微小時間 [s]
     float predict_time_; // [s]
+    float roomba_radius_; //Roombaのサイズ [m]（Roombaの中心から壁までの最小距離）
 
     // 重み定数
     float weight_heading_;
     float weight_dist_;
     float weight_vel_;
-    // float roomba_radius_;
+
+    State roomba_;
+    DynamicWindow dw_;
 
 
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
 
-    ros::Subscriber sub_local_map_;                        // サブスクライバ（local_map）
-    ros::Subscriber sub_local_goal_;                        // サブスクライバ（local_goal）
-    ros::Subscriber sub_pose_;                               // サブスクライバ（現在位置）
-    ros::Publisher pub_cmd_vel_;                            // パブリッシャ（制御入力）
+    ros::Subscriber sub_local_map_; // サブスクライバ（local_map）
+    ros::Subscriber sub_local_goal_; // サブスクライバ（local_goal）
+    ros::Subscriber sub_pose_;        // サブスクライバ（現在位置）
+    ros::Subscriber sub_ob_poses_; // サブスクライバ（障害物のポーズの配列）
+    ros::Publisher pub_cmd_vel_;     // パブリッシャ（制御入力）
 
-    nav_msgs::OccupancyGrid local_map_;             // local map
+    nav_msgs::OccupancyGrid local_map_;                // local map
     geometry_msgs::PoseStamped local_goal_;         // local path用の目標位置
-    geometry_msgs::PoseStamped current_pose_; // 現在位置
-    geometry_msgs::PoseStamped previous_pose_;       // 微小時間前の位置
+    geometry_msgs::PoseStamped current_pose_;   // 現在位置
+    geometry_msgs::PoseStamped previous_pose_; // 微小時間前の位置
+    geometry_msgs::PoseArray ob_poses_;             // 障害物のポーズの配列
 
     roomba_500driver_meiji::RoombaCtrl cmd_vel_; // 制御入力
-    RoombaState roomba_;
 };
 
 #endif
