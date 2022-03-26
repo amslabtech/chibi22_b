@@ -63,9 +63,9 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~"), nh_("")
 
     // Subscriber
     sub_local_goal_ = nh_.subscribe("/local_goal", 10, &LocalPathPlanner::local_goal_callback, this);
-    sub_pose_        = nh_.subscribe("/roomba/pose", 10, &LocalPathPlanner::pose_callback, this);
-    sub_ob_poses_ = nh_.subscribe("/local_map/obstacle", 10, &LocalPathPlanner::ob_poses_callback, this);
-    // sub_local_map_ = nh_.subscribe("/local_map/local_map", 10, &LocalPathPlanner::local_map_callback, this);
+    sub_pose_       = nh_.subscribe("/roomba/pose", 10, &LocalPathPlanner::pose_callback, this);
+    sub_ob_poses_   = nh_.subscribe("/local_map/obstacle", 10, &LocalPathPlanner::ob_poses_callback, this);
+    // sub_local_map_  = nh_.subscribe("/local_map/local_map", 10, &LocalPathPlanner::local_map_callback, this);
 
     // Publisher
     pub_cmd_speed_ = nh_.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control", 1);
@@ -138,13 +138,13 @@ void LocalPathPlanner::calc_dynamic_window()
 // 予測軌跡を作成
 std::vector<State> LocalPathPlanner::calc_trajectory(const float velocity, const float yawrate)
 {
-    std::vector<State> trajectory; // 軌跡格納用の動的配列
-    State state;                   // 軌跡作成用の仮想ロボット
+    std::vector<State> trajectory;           // 軌跡格納用の動的配列
+    State state = {0.0, 0.0, 0.0, 0.0, 0.0}; // 軌跡作成用の仮想ロボット
 
     // 現在のposeを代入
-    state.x   = roomba_.x();
-    state.y   = roomba_.y();
-    state.yaw = roomba_.yaw();
+    // state.x   = roomba_.x();
+    // state.y   = roomba_.y();
+    // state.yaw = roomba_.yaw();
 
     // 軌跡を格納
     for(double t=0.0; t<=predict_time_; t+=dt_)
@@ -187,7 +187,7 @@ std::vector<float> LocalPathPlanner::calc_final_input()
 }
 
 // 評価関数を計算
-float  LocalPathPlanner::calc_evaluation(const std::vector<State> traj)
+float LocalPathPlanner::calc_evaluation(const std::vector<State> traj)
 {
     const float heading_score  = weight_heading_ * calc_heading_eval(traj);
     const float distance_score = weight_dist_    * calc_dist_eval(traj);
@@ -251,7 +251,7 @@ float LocalPathPlanner::calc_vel_eval(const std::vector<State> traj)
 }
 
 // ゴールに着くまでTrueを返す
-bool can_move()
+bool LocalPathPlanner::can_move()
 {
     const float dx = local_goal_.point.x - roomba_.x();
     const float dy = local_goal_.point.y - roomba_.y();

@@ -70,24 +70,24 @@ private:
     void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr&);
     // void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
 
-    void roomba_control(const float velocity, const float yawrate);     // Roombaの制御入力
-    void move(State& state, const float velocity, const float yawrate); // 予測軌跡作成時における仮想ロボットの移動
-    void calc_trajectory(const float velocity, const float yawrate);    // 予測軌跡の作成
-    float calc_evaluation(const std::vector<State> traj);               // 評価関数を計算
-    float calc_heading_eval(const std::vector<State> traj);             // headingの評価関数を計算
-    float calc_dist_eval(const std::vector<State> traj);                // distの評価関数を計算
-    float calc_vel_eval(const std::vector<State> traj);                 // velocityの評価関数を計算
+    void  roomba_control(const float velocity, const float yawrate);     // Roombaの制御入力
+    void  move(State& state, const float velocity, const float yawrate); // 予測軌跡作成時における仮想ロボットの移動
+    void  calc_trajectory(const float velocity, const float yawrate);    // 予測軌跡の作成
+    float calc_evaluation(const std::vector<State> traj);                // 評価関数を計算
+    float calc_heading_eval(const std::vector<State> traj);              // headingの評価関数を計算
+    float calc_dist_eval(const std::vector<State> traj);                 // distの評価関数を計算
+    float calc_vel_eval(const std::vector<State> traj);                  // velocityの評価関数を計算
 
 
     // ----- 引数なし関数 -----
     void calc_dynamic_window(); // Dynamic Windowを計算
-    void calc_final_input();    // 最適な制御入力を計算 
+    void calc_final_input();    // 最適な制御入力を計算
     bool can_move();            // ゴールに着くまでTrueを返す
-    // void dwa_control(); 
+    // void dwa_control();
 
 
     // ----- 変数 -----
-    int hz_;               // ループ周波数
+    int   hz_;             // ループ周波数
     float max_vel_;        // 最高並進速度 [m/s]
     float min_vel_;        // 最低並進速度 [m/s]
     float max_yawrate_;    // 最高旋回速度 [rad/s]
@@ -126,7 +126,7 @@ private:
     // pose関連
     geometry_msgs::PointStamped local_goal_;   // local path用の目標位置
     geometry_msgs::PoseStamped  current_pose_; // 現在位置
-    geometry_msgs::PoseArray ob_poses_;        // 障害物のポーズの配列
+    geometry_msgs::PoseArray    ob_poses_;     // 障害物のポーズの配列
     // nav_msgs::OccupancyGrid local_map_;
     // geometry_msgs::PoseStamped previous_pose_; // 微小時間前の位置
 
