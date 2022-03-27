@@ -46,7 +46,7 @@ float Robot::yawrate()  { return state_.yawrate; }
 LocalPathPlanner::LocalPathPlanner():private_nh_("~"), nh_("")
 {
     // パラメータの取得
-    private_nh_.getParam("hz", hz);
+    private_nh_.getParam("hz", hz_);
     private_nh_.getParam("max_vel", max_vel_);
     private_nh_.getParam("min_vel", min_vel_);
     private_nh_.getParam("max_yawrate", max_yawrate_);
@@ -56,9 +56,9 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~"), nh_("")
     private_nh_.getParam("yawrate_reso", yawrate_reso_);
     private_nh_.getParam("dt", dt_);
     private_nh_.getParam("predict_time", predict_time_);
-    private_nh_.getParam("heading_cost_gain", heading_cost_gain_);
-    private_nh_.getParam("dist_cost_gain", dist_cost_gain_);
-    private_nh_.getParam("vel_cost_gain", vel_cost_gain_);
+    private_nh_.getParam("weight_heading", weight_heading_);
+    private_nh_.getParam("weight_dist", weight_dist_);
+    private_nh_.getParam("weight_vel", weight_vel_);
     private_nh_.getParam("goal_tolerance", goal_tolerance_);
 
     // Subscriber
@@ -87,7 +87,7 @@ void LocalPathPlanner::pose_callback(const geometry_msgs::PoseStamped::ConstPtr&
 // ob_posesのコールバック関数
 void LocalPathPlanner::ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
-    ob_poses_ = *msgs;
+    ob_poses_ = *msg;
 }
 
 // local_mapのコールバック関数
@@ -205,7 +205,7 @@ float LocalPathPlanner::calc_heading_eval(const std::vector<State> traj)
     const float theta = traj.back().yaw;
 
     // 最終時刻の位置に対するゴールの方位(+の向きをroombaに合わせる)
-    const float goal_theta = -atan2(local_goal_.pose.position.y - traj.back().y, local_goal_.pose.position.x - traj.back().x);
+    const float goal_theta = -atan2(local_goal_.point.y - traj.back().y, local_goal_.point.x - traj.back().x);
 
     // ゴールまでの方位差分
     float target_theta = 0.0;
@@ -241,7 +241,7 @@ float LocalPathPlanner::calc_dist_eval(const std::vector<State> traj)
         }
     }
 
-    return min_dist/serach_range; // 正規化
+    return min_dist/search_range; // 正規化
 }
 
 // velocityの評価関数を計算

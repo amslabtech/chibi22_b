@@ -72,7 +72,7 @@ private:
 
     void  roomba_control(const float velocity, const float yawrate);     // Roombaの制御入力
     void  move(State& state, const float velocity, const float yawrate); // 予測軌跡作成時における仮想ロボットの移動
-    void  calc_trajectory(const float velocity, const float yawrate);    // 予測軌跡の作成
+    std::vector<State> calc_trajectory(const float velocity, const float yawrate);    // 予測軌跡の作成
     float calc_evaluation(const std::vector<State> traj);                // 評価関数を計算
     float calc_heading_eval(const std::vector<State> traj);              // headingの評価関数を計算
     float calc_dist_eval(const std::vector<State> traj);                 // distの評価関数を計算
@@ -81,7 +81,7 @@ private:
 
     // ----- 引数なし関数 -----
     void calc_dynamic_window(); // Dynamic Windowを計算
-    void calc_final_input();    // 最適な制御入力を計算
+    std::vector<float> calc_final_input();    // 最適な制御入力を計算
     bool can_move();            // ゴールに着くまでTrueを返す
     // void dwa_control();
 
