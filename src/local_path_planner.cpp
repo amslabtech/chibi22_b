@@ -56,10 +56,12 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~"), nh_("")
     private_nh_.getParam("yawrate_reso", yawrate_reso_);
     private_nh_.getParam("dt", dt_);
     private_nh_.getParam("predict_time", predict_time_);
+    private_nh_.getParam("roomba_radius", roomba_radius_);
+    private_nh_.getParam("goal_tolerance", goal_tolerance_);
+    private_nh_.getParam("search_range", search_range_);
     private_nh_.getParam("weight_heading", weight_heading_);
     private_nh_.getParam("weight_dist", weight_dist_);
     private_nh_.getParam("weight_vel", weight_vel_);
-    private_nh_.getParam("goal_tolerance", goal_tolerance_);
 
     // Subscriber
     sub_local_goal_ = nh_.subscribe("/local_goal", 10, &LocalPathPlanner::local_goal_callback, this);
@@ -110,10 +112,20 @@ void LocalPathPlanner::roomba_control(const float velocity, const float yawrate)
 void LocalPathPlanner::move(State& state, const float velocity, const float yawrate)
 {
     state.yaw      += yawrate * dt_;
+    yaw             = optimize_angle(state.yaw);
     state.x        += velocity * cos(state.yaw) * dt_;
     state.y        += velocity * sin(state.yaw) * dt_;
     state.velocity  = velocity;
     state.yawrate   = yawrate;
+}
+
+// 適切な角度(-M_PI ~ M_PI)を返す
+float optimize_angle(float angle)
+{
+    if(M_PI  < angle) angle -= 2.0*M_PI;
+    if(angle < -M_PI) angle += 2.0*M_PI;
+
+    return angle;
 }
 
 // Dynamic Windowを計算
@@ -147,7 +159,7 @@ std::vector<State> LocalPathPlanner::calc_trajectory(const float velocity, const
     // state.yaw = roomba_.yaw();
 
     // 軌跡を格納
-    for(double t=0.0; t<=predict_time_; t+=dt_)
+    for(float t=0.0; t<=predict_time_; t+=dt_)
     {
         move(state, velocity, yawrate);
         trajectory.push_back(state);
@@ -204,8 +216,8 @@ float LocalPathPlanner::calc_heading_eval(const std::vector<State> traj)
     // 最終時刻のロボットの方位
     const float theta = traj.back().yaw;
 
-    // 最終時刻の位置に対するゴールの方位(+の向きをroombaに合わせる)
-    const float goal_theta = -atan2(local_goal_.point.y - traj.back().y, local_goal_.point.x - traj.back().x);
+    // 最終時刻の位置に対するゴールの方位
+    const float goal_theta = atan2(local_goal_.point.y - traj.back().y, local_goal_.point.x - traj.back().x);
 
     // ゴールまでの方位差分
     float target_theta = 0.0;
@@ -215,7 +227,7 @@ float LocalPathPlanner::calc_heading_eval(const std::vector<State> traj)
         target_theta = theta - goal_theta;
 
     // headingの評価値
-    const float heading_eval = (M_PI - abs(target_theta))/M_PI; // 正規化
+    const float heading_eval = (M_PI - abs(optimize_angle(target_theta)))/M_PI; // 正規化
 
     return heading_eval;
 }
@@ -223,17 +235,17 @@ float LocalPathPlanner::calc_heading_eval(const std::vector<State> traj)
 // distの評価関数を計算
 float LocalPathPlanner::calc_dist_eval(const std::vector<State> traj)
 {
-    const float search_range = 10.0; // 探索する範囲
-    float min_dist = search_range;   // 最も近い障害物との距離
+    float min_dist = search_range_; // 最も近い障害物との距離
 
     // pathの点と障害物のすべての組み合わせを探索
     for(auto& state : traj)
     {
         for(auto& ob_pose : ob_poses_.poses)
         {
+            // pathのうちの１点と障害物の距離を計算
             const float dx   = ob_pose.position.x - state.x;
             const float dy   = ob_pose.position.y - state.y;
-            const float dist = sqrt(powf(dx, 2.0)+powf(dy, 2.0)); // pathのうちの１点と障害物の距離
+            const float dist = sqrt(powf(dx, 2.0)+powf(dy, 2.0));
 
             // 最小値の更新
             if(dist < min_dist)
@@ -247,7 +259,10 @@ float LocalPathPlanner::calc_dist_eval(const std::vector<State> traj)
 // velocityの評価関数を計算
 float LocalPathPlanner::calc_vel_eval(const std::vector<State> traj)
 {
-    return abs(traj.back().velocity)/max_vel_; // 正規化
+    if(0 < traj.back().velocity) // 前進
+        return traj.back().velocity/max_vel_; // 正規化
+    else // 後退
+        return 0.0
 }
 
 // ゴールに着くまでTrueを返す

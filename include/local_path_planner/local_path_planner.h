@@ -12,8 +12,8 @@ speed         : 速度の総称(vel, yawrate)
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
-#include <nav_msgs/OccupancyGrid.h>
 #include <tf2/utils.h>
+// #include <nav_msgs/OccupancyGrid.h>
 
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 
@@ -30,10 +30,10 @@ struct State
 
 struct DynamicWindow
 {
-    float min_vel;
-    float max_vel;
-    float min_yawrate;
-    float max_yawrate;
+    float min_vel;     // [m/s]
+    float max_vel;     // [m/s]
+    float min_yawrate; // [rad/s]
+    float max_yawrate; // [rad/s]
 };
 
 
@@ -45,7 +45,7 @@ public:
     void update_pose(const geometry_msgs::PoseStamped pose);   // poseの更新
     void set_speed(const float velocity, const float yawrate); // 直前の制御入力を記録
 
-    // メンバ関数の値を返却する関数
+    // メンバ変数の値を返す関数
     float x();
     float y();
     float yaw();
@@ -70,19 +70,20 @@ private:
     void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr&);
     // void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
 
-    void  roomba_control(const float velocity, const float yawrate);     // Roombaの制御入力
-    void  move(State& state, const float velocity, const float yawrate); // 予測軌跡作成時における仮想ロボットの移動
-    std::vector<State> calc_trajectory(const float velocity, const float yawrate);    // 予測軌跡の作成
-    float calc_evaluation(const std::vector<State> traj);                // 評価関数を計算
-    float calc_heading_eval(const std::vector<State> traj);              // headingの評価関数を計算
-    float calc_dist_eval(const std::vector<State> traj);                 // distの評価関数を計算
-    float calc_vel_eval(const std::vector<State> traj);                  // velocityの評価関数を計算
+    void  roomba_control(const float velocity, const float yawrate);               // Roombaの制御入力
+    void  move(State& state, const float velocity, const float yawrate);           // 予測軌跡作成時における仮想ロボットの移動
+    float optimize_angle(float angle);                                             // 適切な角度(-M_PI ~ M_PI)を返す
+    float calc_evaluation(const std::vector<State> traj);                          // 評価関数を計算
+    float calc_heading_eval(const std::vector<State> traj);                        // headingの評価関数を計算
+    float calc_dist_eval(const std::vector<State> traj);                           // distの評価関数を計算
+    float calc_vel_eval(const std::vector<State> traj);                            // velocityの評価関数を計算
+    std::vector<State> calc_trajectory(const float velocity, const float yawrate); // 予測軌跡の作成
 
 
     // ----- 引数なし関数 -----
-    void calc_dynamic_window(); // Dynamic Windowを計算
-    std::vector<float> calc_final_input();    // 最適な制御入力を計算
-    bool can_move();            // ゴールに着くまでTrueを返す
+    void calc_dynamic_window();            // Dynamic Windowを計算
+    bool can_move();                       // ゴールに着くまでTrueを返す
+    std::vector<float> calc_final_input(); // 最適な制御入力を計算
     // void dwa_control();
 
 
@@ -99,6 +100,7 @@ private:
     float predict_time_;   // 軌跡予測時間 [s]
     float roomba_radius_;  // Roombaのサイズ [m]（Roombaの中心から壁までの最小距離）
     float goal_tolerance_; // 目標地点の許容誤差 [m]
+    float search_range_;   // 評価関数distで探索する範囲 [m]
 
     // 重み定数
     float weight_heading_;
