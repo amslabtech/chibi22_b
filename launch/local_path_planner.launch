@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- yaml file path -->
+    <arg name="local_path_planner_settings" default="$(find chibi22_b)/config/param/local_path_planner.yaml"/>
+    
+    <!-- node launch -->
+    <node pkg="chibi22_b" type="local_path_planner" name="local_path_planner" >
+        <rosparam command="load" file="$(arg local_path_planner_settings)"/>
+    </node>
+    <node pkg="roomba_500driver_meiji" type="main500" name="roomba_500driver_meiji"/>
+</launch>
