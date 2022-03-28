@@ -1,28 +1,31 @@
 # 制御周波数
-hz: 10
+hz: 10 # [Hz]
 
 # 速度・加速度制限
-max_vel: 0.
-min_vel: 0.
-max_yawrate: 0.
-max_accel: 0.
-max_dyawrate: 0.
+max_vel: 0. # [m/s]
+min_vel: 0. # [m/s]
+max_yawrate: 0. # [rad/s]
+max_accel: 0. # [m/s^2]
+max_dyawrate: 0. # [rad/s^2]
 
 # 速度解像度
-vel_reso: 0.
-yawrate_reso: 0.
+vel_reso: 0. # [m/s]
+yawrate_reso: 0. # [rad/s]
 
-# 時間
+# 時間 [s]
 dt: 0.1
 predict_time: 0.
 
-# 機体サイズ
+# 機体サイズ [m]
 roomba_radius: 0.
 
-# 重み定数
+# 重み定数 [-]
 weight_heading: 1.
 weight_dist: 1.
 weight_vel: 1.
 
-# 許容誤差
+# 許容誤差 [m]
 goal_tolerance: 0.
+
+# 評価関数distで探索する範囲 [m]
+search_range: 10.0
