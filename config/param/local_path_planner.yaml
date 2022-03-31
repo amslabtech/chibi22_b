@@ -1,31 +1,33 @@
 # 制御周波数
 hz: 10 # [Hz]
 
-# 速度・加速度制限
-max_vel: 0. # [m/s]
-min_vel: 0. # [m/s]
-max_yawrate: 0. # [rad/s]
-max_accel: 0. # [m/s^2]
-max_dyawrate: 0. # [rad/s^2]
+# 速度制限
+max_vel: 0.3      # [m/s]
+min_vel: -0.2     # [m/s]
+max_yawrate: 0.55 # [rad/s]
+
+# 加速度制限
+max_accel: 1000.0    # [m/s^2]
+max_dyawrate: 1000.0 # [rad/s^2]
 
 # 速度解像度
-vel_reso: 0. # [m/s]
-yawrate_reso: 0. # [rad/s]
+vel_reso: 0.05    # [m/s]
+yawrate_reso: 0.1 # [rad/s]
 
 # 時間 [s]
 dt: 0.1
-predict_time: 0.
+predict_time: 3.0
 
 # 機体サイズ [m]
-roomba_radius: 0.
+roomba_radius: 0.2
 
 # 重み定数 [-]
-weight_heading: 1.
-weight_dist: 1.
-weight_vel: 1.
+weight_heading: 0.2
+weight_dist: 0.3
+weight_vel: 1.0
 
 # 許容誤差 [m]
-goal_tolerance: 0.
+goal_tolerance: 0.5
 
 # 評価関数distで探索する範囲 [m]
-search_range: 10.0
+search_range: 5.0
