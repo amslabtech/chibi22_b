@@ -3,9 +3,43 @@
 std::random_device seed;
 std::mt19937 engine(seed());
 
+Particle::Particle(double x, double y, double yaw, double weight)
+{
+    set(x,y,yaw,weight);
+}
+
+Particle::set(double x, double y, double yaw, double weight)
+{
+    x_ = x;
+    y_ = y;
+    yaw_ = yaw;
+    weight_ = weight;
+}
+
 ParticleFilter::ParticleFilter()
 {
-    Particle p();
+    N_ = mcl_ -> getN();
+    init_x_ = mcl_ -> getINIT_X();
+    init_y_ = mcl_ -> getINIT_Y();
+    init_yaw_ = mcl_ -> getINIT_YAW();
+    x_cov_ = mcl_ -> getINIT_X_COV();
+    y_cov_ = mcl_ -> getINIT_Y_COV();
+    yaw_cov_ = mcl_ -> getINIT_YAW_COV();
+}
+
+ParticleFilter::initialize()
+{
+    check_N();
+    double w = 1.0/(double)N_;
+
+    std::vector<Particle> init_particles;
+    for(int i=0; i<N_; i++){
+        double x = noiseAdd(init_x_,x_cov_);
+        double y = noiseAdd(init_y_,y_cov_);
+        double yaw = noiseAdd(init_yaw_,yaw_cov_);
+        pParticle_ = new Particle(x,y,yaw,w);
+        init_particles.push_back(pParticle_);
+
 
 Localizer::Localizer():private_nh("~")
 {
@@ -32,7 +66,6 @@ Localizer::Localizer():private_nh("~")
 void Localizer::odometry_callback(const nav_msgs::Odometry::ConstPtr &msg)
 {
     odometry_ = *msg;
-    pf_.odometryUpdate(odometry_);
 }
 
 void Localizer::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
@@ -43,29 +76,6 @@ void Localizer::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 void Localizer::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
     laser_ = *msg;
-}
-
-double Localizer::add_noise(double mu, double sigma)
-{
-    std::normal_distribution<> dist(mu, sigma);
-    return dist(engine);
-}
-
-void Localizer::p_init(double init_x, double init_y, double init_yaw, double init_x_cov, double init_y_cov, double init_yaw_cov)
-{
-    pose.pose.position.x = add_noise(init_x, init_x_cov);
-    pose.pose.position.y = add_noise(init_y, init_y_cov);
-    double yaw = add_noise(init_yaw, init_yaw_cov);
-    quaternionTFToMsg(tf::createQuaternionFromYaw(yaw), pose.pose.orientation);
-}
-
-void Localizer::p_motionUpdate()
-{
-    if(first_motionUpdate_){
-        prev_odom_ = last_odom_;
-        first_motionUpdate_ = false;
-        return;
-    }
 }
 
 int main(int argc, char **argv)

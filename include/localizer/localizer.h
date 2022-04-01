@@ -17,8 +17,16 @@
 class Particle
 {
 public:
-    Particle();
-    geometry_msgs::PoseStamped pose_;
+    Particle(double x=0,double y=0,double yaw=0,double weight=0);
+    void set(double x,double y,double yaw,double weight);
+    double getPose_x(){return x_;}
+    double getPose_y(){return y_;}
+    double getPose_yaw(){return yaw_;}
+    double getWeight(){return weight_;}
+private:
+    double x_;
+    double y_;
+    double yaw_;
     double weight_;
 };
 
@@ -26,24 +34,27 @@ class ParticleFilter
 {
 public:
     ParticleFilter();
-    vector<Particle> particles_;
-    void odometryUpdate(const nav_msgs::Odometry odometry);
+    void initialize();
     void motionUpdate();
     void move(double dx,double dy,double dyaw);
     void measurementUpdate();
-private:
-    void set(double x,double y,double yaw,double x_cov,double y_cov,double yaw_cov);
-    void resampling();
     void weightNormalize();
-    void weightReset();
+    void resampling();
+    void check_N();
+private:
+    double noiseAdd(double mu,double cov);
     double angleSubstruct(double angle1, double angle2);
-    double optimize_angle(double angle);
-
-    Particle p_;
-    Localizer mcl_;
-
-    nav_msgs::Odometry last_odom_;
-    nav_msgs::Odometry prev_odom_;
+    double angleOptimize(double angle);
+    std::vector<Particle> particles_;
+    double N_;
+    double init_x_;
+    double init_y_;
+    double init_yaw_;
+    double x_cov_;
+    double y_cov_;
+    double yaw_cov_;
+    Particle* pParticle_;
+    Localizer* pMcl_;
 };
 
 class Localizer
@@ -51,6 +62,14 @@ class Localizer
 public:
     Localizer();
     void process();
+
+    double getN(){return N_;}
+    double getINIT_X(){return INIT_X_;}
+    double getINIT_Y(){return INIT_Y_;}
+    double getINIT_YAW(){return INIT_YAW_;}
+    double getINIT_X_COV(){return INIT_X_COV_;}
+    double getINIT_Y_COV(){return INIT_Y_COV_;}
+    double getINIT_YAW_COV(){return INIT_YAW_COV_;}
 
 private:
     void odometry_callback(nav_msgs::Odometry::ConstPtr &msg);
@@ -67,10 +86,6 @@ private:
     double INIT_Y_COV_;
     double INIT_YAW_COV_;
 
-    bool first_motionUpdate_ = true;
-
-    ParticleFilter pf_;
-
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
 
@@ -83,7 +98,8 @@ private:
 
     geometry_msgs::PoseStamped estimated_pose_;
     geometry_msgs::PoseStamped poses_;
-    nav_msgs::Odometry odometry_;
+    nav_msgs::Odometry last_odometry_;
+    nav_msgs::Odometry prev_odometry_;
     nav_msgs::OccupancyGrid map_;
     sensor_msgs::LasorScan laser_;
 
