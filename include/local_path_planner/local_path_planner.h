@@ -21,19 +21,19 @@ speed         : 速度の総称(vel, yawrate)
 // ===== 構造体 =====
 struct State
 {
-    float x;        // [m]
-    float y;        // [m]
-    float yaw;      // [rad]
-    float velocity; // [m/s]
-    float yawrate;  // [rad/s]
+    double x;        // [m]
+    double y;        // [m]
+    double yaw;      // [rad]
+    double velocity; // [m/s]
+    double yawrate;  // [rad/s]
 };
 
 struct DynamicWindow
 {
-    float min_vel;     // [m/s]
-    float max_vel;     // [m/s]
-    float min_yawrate; // [rad/s]
-    float max_yawrate; // [rad/s]
+    double min_vel;     // [m/s]
+    double max_vel;     // [m/s]
+    double min_yawrate; // [rad/s]
+    double max_yawrate; // [rad/s]
 };
 
 
@@ -43,14 +43,14 @@ class Robot
 public:
     Robot(); // デフォルトコンストラクタ
     void update_pose(const geometry_msgs::PoseStamped pose);   // poseの更新
-    void set_speed(const float velocity, const float yawrate); // 直前の制御入力を記録
+    void set_speed(const double velocity, const double yawrate); // 直前の制御入力を記録
 
     // メンバ変数の値を返す関数
-    float x();
-    float y();
-    float yaw();
-    float velocity();
-    float yawrate();
+    double x();
+    double y();
+    double yaw();
+    double velocity();
+    double yawrate();
 
 private:
     State state_;
@@ -70,42 +70,42 @@ private:
     void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr&);
     // void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
 
-    void  roomba_control(const float velocity, const float yawrate);               // Roombaの制御入力
-    void  move(State& state, const float velocity, const float yawrate);           // 予測軌跡作成時における仮想ロボットの移動
-    float optimize_angle(float angle);                                             // 適切な角度(-M_PI ~ M_PI)を返す
-    float calc_evaluation(const std::vector<State> traj);                          // 評価関数を計算
-    float calc_heading_eval(const std::vector<State> traj);                        // headingの評価関数を計算
-    float calc_dist_eval(const std::vector<State> traj);                           // distの評価関数を計算
-    float calc_vel_eval(const std::vector<State> traj);                            // velocityの評価関数を計算
-    std::vector<State> calc_trajectory(const float velocity, const float yawrate); // 予測軌跡の作成
+    void  roomba_control(const double velocity, const double yawrate);               // Roombaの制御入力
+    void  move(State& state, const double velocity, const double yawrate);           // 予測軌跡作成時における仮想ロボットの移動
+    double optimize_angle(double angle);                                             // 適切な角度(-M_PI ~ M_PI)を返す
+    double calc_evaluation(const std::vector<State> traj);                          // 評価関数を計算
+    double calc_heading_eval(const std::vector<State> traj);                        // headingの評価関数を計算
+    double calc_dist_eval(const std::vector<State> traj);                           // distの評価関数を計算
+    double calc_vel_eval(const std::vector<State> traj);                            // velocityの評価関数を計算
+    std::vector<State> calc_trajectory(const double velocity, const double yawrate); // 予測軌跡の作成
 
 
     // ----- 引数なし関数 -----
     void calc_dynamic_window();            // Dynamic Windowを計算
     bool can_move();                       // ゴールに着くまでTrueを返す
-    std::vector<float> calc_final_input(); // 最適な制御入力を計算
+    std::vector<double> calc_final_input(); // 最適な制御入力を計算
     // void dwa_control();
 
 
     // ----- 変数 -----
     int   hz_;             // ループ周波数
-    float max_vel_;        // 最高並進速度 [m/s]
-    float min_vel_;        // 最低並進速度 [m/s]
-    float max_yawrate_;    // 最高旋回速度 [rad/s]
-    float max_accel_;      // 最高並進加速度 [m/s^2]
-    float max_dyawrate_;   // 最高旋回加速度 [rad/s^2]
-    float vel_reso_;       // 並進速度解像度 [m/s]
-    float yawrate_reso_;   // 旋回速度解像度 [rad/s]
-    float dt_;             // 微小時間 [s]
-    float predict_time_;   // 軌跡予測時間 [s]
-    float roomba_radius_;  // Roombaのサイズ [m]（Roombaの中心から壁までの最小距離）
-    float goal_tolerance_; // 目標地点の許容誤差 [m]
-    float search_range_;   // 評価関数distで探索する範囲 [m]
+    double max_vel_;        // 最高並進速度 [m/s]
+    double min_vel_;        // 最低並進速度 [m/s]
+    double max_yawrate_;    // 最高旋回速度 [rad/s]
+    double max_accel_;      // 最高並進加速度 [m/s^2]
+    double max_dyawrate_;   // 最高旋回加速度 [rad/s^2]
+    double vel_reso_;       // 並進速度解像度 [m/s]
+    double yawrate_reso_;   // 旋回速度解像度 [rad/s]
+    double dt_;             // 微小時間 [s]
+    double predict_time_;   // 軌跡予測時間 [s]
+    double roomba_radius_;  // Roombaのサイズ [m]（Roombaの中心から壁までの最小距離）
+    double goal_tolerance_; // 目標地点の許容誤差 [m]
+    double search_range_;   // 評価関数distで探索する範囲 [m]
 
     // 重み定数
-    float weight_heading_;
-    float weight_dist_;
-    float weight_vel_;
+    double weight_heading_;
+    double weight_dist_;
+    double weight_vel_;
 
 
     // ----- オブジェクト -----
