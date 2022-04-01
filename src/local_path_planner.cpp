@@ -112,7 +112,7 @@ void LocalPathPlanner::roomba_control(const float velocity, const float yawrate)
 void LocalPathPlanner::move(State& state, const float velocity, const float yawrate)
 {
     state.yaw      += yawrate * dt_;
-    yaw             = optimize_angle(state.yaw);
+    state.yaw       = optimize_angle(state.yaw);
     state.x        += velocity * cos(state.yaw) * dt_;
     state.y        += velocity * sin(state.yaw) * dt_;
     state.velocity  = velocity;
@@ -120,7 +120,7 @@ void LocalPathPlanner::move(State& state, const float velocity, const float yawr
 }
 
 // 適切な角度(-M_PI ~ M_PI)を返す
-float optimize_angle(float angle)
+float LocalPathPlanner::optimize_angle(float angle)
 {
     if(M_PI  < angle) angle -= 2.0*M_PI;
     if(angle < -M_PI) angle += 2.0*M_PI;
@@ -253,7 +253,7 @@ float LocalPathPlanner::calc_dist_eval(const std::vector<State> traj)
         }
     }
 
-    return min_dist/search_range; // 正規化
+    return min_dist/search_range_; // 正規化
 }
 
 // velocityの評価関数を計算
@@ -262,7 +262,7 @@ float LocalPathPlanner::calc_vel_eval(const std::vector<State> traj)
     if(0 < traj.back().velocity) // 前進
         return traj.back().velocity/max_vel_; // 正規化
     else // 後退
-        return 0.0
+        return 0.0;
 }
 
 // ゴールに着くまでTrueを返す
