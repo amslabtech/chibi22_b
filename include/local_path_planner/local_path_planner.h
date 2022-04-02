@@ -42,7 +42,7 @@ class Robot
 {
 public:
     Robot(); // デフォルトコンストラクタ
-    void update_pose(const geometry_msgs::PoseStamped pose);   // poseの更新
+    void update_pose(const geometry_msgs::PoseStamped pose);     // poseの更新
     void set_speed(const double velocity, const double yawrate); // 直前の制御入力を記録
 
     // メンバ変数の値を返す関数
@@ -73,22 +73,22 @@ private:
     void  roomba_control(const double velocity, const double yawrate);               // Roombaの制御入力
     void  move(State& state, const double velocity, const double yawrate);           // 予測軌跡作成時における仮想ロボットの移動
     double optimize_angle(double angle);                                             // 適切な角度(-M_PI ~ M_PI)を返す
-    double calc_evaluation(const std::vector<State> traj);                          // 評価関数を計算
-    double calc_heading_eval(const std::vector<State> traj);                        // headingの評価関数を計算
-    double calc_dist_eval(const std::vector<State> traj);                           // distの評価関数を計算
-    double calc_vel_eval(const std::vector<State> traj);                            // velocityの評価関数を計算
+    double calc_evaluation(const std::vector<State> traj);                           // 評価関数を計算
+    double calc_heading_eval(const std::vector<State> traj);                         // headingの評価関数を計算
+    double calc_dist_eval(const std::vector<State> traj);                            // distの評価関数を計算
+    double calc_vel_eval(const std::vector<State> traj);                             // velocityの評価関数を計算
     std::vector<State> calc_trajectory(const double velocity, const double yawrate); // 予測軌跡の作成
 
 
     // ----- 引数なし関数 -----
-    void calc_dynamic_window();            // Dynamic Windowを計算
-    bool can_move();                       // ゴールに着くまでTrueを返す
+    void calc_dynamic_window();             // Dynamic Windowを計算
+    bool can_move();                        // ゴールに着くまでTrueを返す
     std::vector<double> calc_final_input(); // 最適な制御入力を計算
     // void dwa_control();
 
 
     // ----- 変数 -----
-    int   hz_;             // ループ周波数
+    int   hz_;              // ループ周波数
     double max_vel_;        // 最高並進速度 [m/s]
     double min_vel_;        // 最低並進速度 [m/s]
     double max_yawrate_;    // 最高旋回速度 [rad/s]

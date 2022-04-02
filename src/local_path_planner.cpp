@@ -173,7 +173,7 @@ std::vector<double> LocalPathPlanner::calc_final_input()
 {
     std::vector<double> input{0.0, 0.0}; // {velocity, yawrate}
     double max_score = 0.0;              // 評価値の最大値格納用
-    calc_dynamic_window();              // ダイナミックウィンドウを計算
+    calc_dynamic_window();               // ダイナミックウィンドウを計算
 
     // 並進速度と旋回速度のすべての組み合わせを評価
     for(double velocity=dw_.min_vel; velocity<=dw_.max_vel; velocity+=vel_reso_)
@@ -292,7 +292,7 @@ void LocalPathPlanner::process()
         else
         {
             roomba_control(0.0, 0.0);
-            break;
+            // break; // おそらく１つ目のウェイポイントでノードが終了してしまう
         }
 
         ros::spinOnce();   // コールバック関数の実行
