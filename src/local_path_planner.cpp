@@ -70,7 +70,9 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~"), nh_("")
     // sub_local_map_  = nh_.subscribe("/local_map/local_map", 10, &LocalPathPlanner::local_map_callback, this);
 
     // Publisher
-    pub_cmd_speed_ = nh_.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control", 1);
+    pub_cmd_speed_    = nh_.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control", 1);
+    pub_predict_path_ = nh_.advertise<nav_msgs::Path>("/predict_local_paths", 1);
+    pub_optimal_path_ = nh_.advertise<nav_msgs::Path>("/optimal_local_path", 1);
 }
 
 // local_goalのコールバック関数
@@ -168,36 +170,6 @@ std::vector<State> LocalPathPlanner::calc_trajectory(const double velocity, cons
     return trajectory;
 }
 
-// 最適な制御入力を計算
-std::vector<double> LocalPathPlanner::calc_final_input()
-{
-    std::vector<double> input{0.0, 0.0}; // {velocity, yawrate}
-    double max_score = 0.0;              // 評価値の最大値格納用
-    calc_dynamic_window();               // ダイナミックウィンドウを計算
-
-    // 並進速度と旋回速度のすべての組み合わせを評価
-    for(double velocity=dw_.min_vel; velocity<=dw_.max_vel; velocity+=vel_reso_)
-    {
-        for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
-        {
-            const std::vector<State> trajectory = calc_trajectory(velocity, yawrate); // 予測軌跡の生成
-            const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
-
-            // 最大値の更新
-            if(max_score < score)
-            {
-                max_score = score;
-                input[0]  = velocity;
-                input[1]  = yawrate;
-            }
-        }
-    }
-
-    roomba_.set_speed(input[0], input[1]);
-
-    return input;
-}
-
 // 評価関数を計算
 double LocalPathPlanner::calc_evaluation(const std::vector<State> traj)
 {
@@ -276,6 +248,77 @@ bool LocalPathPlanner::can_move()
         return true;
     else
         return false;
+}
+
+// 軌跡を可視化
+void LocalPathPlanner::visualize_traj(const std::vector<State> traj, const ros::Publisher& pub_local_path)
+{
+    ros::Time present_time = ros::Time::now();
+
+    nav_msgs::Path local_path;
+    local_path.header.stamp = present_time;
+    local_path.header.frame_id = "base_link";
+
+    geometry_msgs::PoseStamped pose;
+    pose.header.stamp = present_time;
+    pose.header.frame_id = "base_link";
+
+    for(auto& state : traj)
+    {
+        pose.pose.position.x = state.x;
+        pose.pose.position.y = state.y;
+        local_path.poses.push_back(pose);
+    }
+
+    pub_local_path.publish(local_path);
+}
+
+// 最適な制御入力を計算
+std::vector<double> LocalPathPlanner::calc_final_input()
+{
+    std::vector<double> input{0.0, 0.0};          // {velocity, yawrate}
+    std::vector<std::vector<State>> trajectories; // すべての軌跡格納用
+    double max_score = 0.0;                       // 評価値の最大値格納用
+    int index_of_max_score = 0;                   // 評価値の最大値に対する軌跡のインデックス格納用
+    calc_dynamic_window();                        // ダイナミックウィンドウを計算
+
+    // 並進速度と旋回速度のすべての組み合わせを評価
+    int i = 0; // 現在の軌跡のインデックス保持用
+    for(double velocity=dw_.min_vel; velocity<=dw_.max_vel; velocity+=vel_reso_)
+    {
+        for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
+        {
+            const std::vector<State> trajectory = calc_trajectory(velocity, yawrate); // 予測軌跡の生成
+            const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
+            trajectories.push_back(trajectory);
+
+            // 最大値の更新
+            if(max_score < score)
+            {
+                max_score = score;
+                input[0]  = velocity;
+                input[1]  = yawrate;
+                index_of_max_score = i;
+            }
+            i++;
+        }
+    }
+
+    // 現在速度の記録
+    roomba_.set_speed(input[0], input[1]);
+
+    // pathの可視化
+    i = 0;
+    for(auto& traj : trajectories)
+    {
+        if(index_of_max_score == i)
+            visualize_traj(traj, pub_optimal_path_);
+        else
+            visualize_traj(traj, pub_predict_path_);
+        i++;
+    }
+
+    return input;
 }
 
 void LocalPathPlanner::process()

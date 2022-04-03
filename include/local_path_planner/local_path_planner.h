@@ -12,6 +12,7 @@ speed         : 速度の総称(vel, yawrate)
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <nav_msgs/Path.h>
 #include <tf2/utils.h>
 // #include <nav_msgs/OccupancyGrid.h>
 
@@ -70,14 +71,15 @@ private:
     void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr&);
     // void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
 
-    void  roomba_control(const double velocity, const double yawrate);               // Roombaの制御入力
-    void  move(State& state, const double velocity, const double yawrate);           // 予測軌跡作成時における仮想ロボットの移動
-    double optimize_angle(double angle);                                             // 適切な角度(-M_PI ~ M_PI)を返す
-    double calc_evaluation(const std::vector<State> traj);                           // 評価関数を計算
-    double calc_heading_eval(const std::vector<State> traj);                         // headingの評価関数を計算
-    double calc_dist_eval(const std::vector<State> traj);                            // distの評価関数を計算
-    double calc_vel_eval(const std::vector<State> traj);                             // velocityの評価関数を計算
-    std::vector<State> calc_trajectory(const double velocity, const double yawrate); // 予測軌跡の作成
+    void   roomba_control(const double velocity, const double yawrate);                         // Roombaの制御入力
+    void   move(State& state, const double velocity, const double yawrate);                     // 予測軌跡作成時における仮想ロボットの移動
+    void   visualize_traj(const std::vector<State> traj, const ros::Publisher& pub_local_path); // 軌跡を可視化
+    double optimize_angle(double angle);                                                        // 適切な角度(-M_PI ~ M_PI)を返す
+    double calc_evaluation(const std::vector<State> traj);                                      // 評価関数を計算
+    double calc_heading_eval(const std::vector<State> traj);                                    // headingの評価関数を計算
+    double calc_dist_eval(const std::vector<State> traj);                                       // distの評価関数を計算
+    double calc_vel_eval(const std::vector<State> traj);                                        // velocityの評価関数を計算
+    std::vector<State> calc_trajectory(const double velocity, const double yawrate);            // 予測軌跡の作成
 
 
     // ----- 引数なし関数 -----
@@ -124,13 +126,15 @@ private:
 
     // Publisher
     ros::Publisher pub_cmd_speed_;
+    ros::Publisher pub_optimal_path_;
+    ros::Publisher pub_predict_path_;
 
     // pose関連
     geometry_msgs::PointStamped local_goal_;   // local path用の目標位置
     geometry_msgs::PoseStamped  current_pose_; // 現在位置
     geometry_msgs::PoseArray    ob_poses_;     // 障害物のポーズの配列
     // nav_msgs::OccupancyGrid local_map_;
-    // geometry_msgs::PoseStamped previous_pose_; // 微小時間前の位置
+    // geometry_msgs::PoseStamped previous_pose_;
 
     // 制御入力
     roomba_500driver_meiji::RoombaCtrl cmd_speed_;
