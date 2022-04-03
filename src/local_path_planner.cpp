@@ -43,7 +43,7 @@ double Robot::yawrate()  { return state_.yawrate; }
 
 // ===== クラスLocalPathPlanner =====
 // コンストラクタ
-LocalPathPlanner::LocalPathPlanner():private_nh_("~"), nh_("")
+LocalPathPlanner::LocalPathPlanner():private_nh_("~")
 {
     // パラメータの取得
     private_nh_.getParam("hz", hz_);

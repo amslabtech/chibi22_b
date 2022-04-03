@@ -66,10 +66,10 @@ public:
 private:
     // ----- 引数あり関数 -----
     // 各種コールバック関数
-    void local_goal_callback(const geometry_msgs::PointStamped::ConstPtr&);
-    void pose_callback(const geometry_msgs::PoseStamped::ConstPtr&);
-    void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr&);
-    // void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
+    void local_goal_callback(const geometry_msgs::PointStamped::ConstPtr& msg);
+    void pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+    void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg);
+    // void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg);
 
     void   roomba_control(const double velocity, const double yawrate);                         // Roombaの制御入力
     void   move(State& state, const double velocity, const double yawrate);                     // 予測軌跡作成時における仮想ロボットの移動
