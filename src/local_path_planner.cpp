@@ -140,7 +140,7 @@ void LocalPathPlanner::calc_dynamic_window()
     double Vd[] = {roomba_.velocity() - max_accel_*dt_,
                    roomba_.velocity() + max_accel_*dt_,
                    roomba_.yawrate()  - max_dyawrate_*dt_,
-                   roomba_.yawrate()  - max_dyawrate_*dt_};
+                   roomba_.yawrate()  + max_dyawrate_*dt_};
 
     // 最終的なDynamic Window
     dw_.min_vel     = std::max(Vs[0], Vd[0]);
