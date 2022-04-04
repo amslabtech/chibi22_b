@@ -231,7 +231,7 @@ double LocalPathPlanner::calc_dist_eval(const std::vector<State> traj)
 // velocityの評価関数を計算
 double LocalPathPlanner::calc_vel_eval(const std::vector<State> traj)
 {
-    if(0 < traj.back().velocity) // 前進
+    if(0.0 < traj.back().velocity) // 前進
         return traj.back().velocity/max_vel_; // 正規化
     else // 後退
         return 0.0;
@@ -242,7 +242,7 @@ bool LocalPathPlanner::can_move()
 {
     const double dx = local_goal_.point.x - roomba_.x();
     const double dy = local_goal_.point.y - roomba_.y();
-    const double dist_to_goal = sqrt(powf(dx, 2.0) + powf(dy, 2.0)); // 現在位置からゴールまでの距離
+    const double dist_to_goal = sqrt(pow(dx, 2.0) + pow(dy, 2.0)); // 現在位置からゴールまでの距離
 
     if(dist_to_goal > goal_tolerance_)
         return true;
