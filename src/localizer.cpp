@@ -1,4 +1,4 @@
-#include<Localizer/Localizer.h>
+#include "localizer/localizer.h"
 
 std::random_device seed;
 std::mt19937 engine(seed());
@@ -8,7 +8,7 @@ Particle::Particle(double x, double y, double yaw, double weight)
     set(x,y,yaw,weight);
 }
 
-Particle::set(double x, double y, double yaw, double weight)
+void Particle::set(double x, double y, double yaw, double weight)
 {
     x_ = x;
     y_ = y;
@@ -27,19 +27,48 @@ ParticleFilter::ParticleFilter()
     yaw_cov_ = mcl_ -> getINIT_YAW_COV();
 }
 
-ParticleFilter::initialize()
+void ParticleFilter::initialize()
 {
     check_N();
     double w = 1.0/(double)N_;
 
-    std::vector<Particle> init_particles;
     for(int i=0; i<N_; i++){
-        double x = noiseAdd(init_x_,x_cov_);
-        double y = noiseAdd(init_y_,y_cov_);
-        double yaw = noiseAdd(init_yaw_,yaw_cov_);
-        pParticle_ = new Particle(x,y,yaw,w);
-        init_particles.push_back(pParticle_);
+        double x = setNoise(init_x_,x_cov_);
+        double y = setNoise(init_y_,y_cov_);
+        double yaw = setNoise(init_yaw_,yaw_cov_);
+        Particle p(x,y,yaw);
+        particles_.push_back(p);
+    }
+}
 
+void ParticleFilter::motionUpdate(nav_msgs::Odometry last, nav_msgs::Odometry prev)
+{
+    double dx = last.pose.pose.position.x - prev.pose.pose.position.x;
+    double dy = last.pose.pose.position.y - prev.pose.pose.position.y;
+    double last_yaw = tf2::getYaw(last.pose.orientation);
+    double prev_yaw = tf2::getYaw(prev.pose.orientation);
+    double dyaw = angleOptimize(last_yaw - prev_yaw);
+
+    double distance = sqrt(dx*dx + dy*dy);
+    double direction = angleOptimize(atan2(dy,dx), - prev_yaw);
+    double rotation = angleOptimize(dyaw - direction);
+
+    for(auto& p:particles_)
+        p.move(distance, direction, rotation);
+}
+
+void ParticleFilter::move(double distance, double direction, double rotation)
+{
+    distance = setNoise(distance, distance_cov_);
+    direction = setNoise(direction, rotation_cov_);
+    rotation = setNoise(rotation, rotation_cov_);
+
+    new_x = getPose_x() + distance * cos( angleOptimize(direction + getPose_yaw()) );
+    new_y = getPose_y() + distance * sin( angleOptimize(direction + getPose_yaw()) );
+    new_yaw = angleOptimize(getPose_yaw() + direction + rotation);
+
+    set(new_x, new_y, new_yaw, getWeight());
+}
 
 Localizer::Localizer():private_nh("~")
 {

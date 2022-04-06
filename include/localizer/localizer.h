@@ -1,18 +1,18 @@
 #ifndef LOCALIZER_H
 #define LOCALIZER_H
 
-#include "ros/ros.h"
-#include "nav_msgs/Odometry.h"
-#include "nav_msgs/OccupancyGrid.h"
-#include "sensor_msgs/LasorScan.h"
-#include "geometry_msgs/PoseStamped.h"
-#include "geometry_msgs/PoseArray.h"
-#include "tf2/utils.h"
-#include "roomba_500driver_meiji/RoombaCtrl.h"
-
+#include <ros/ros.h>
+#include <nav_msgs/Odometry.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <sensor_msgs/LasorScan.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseArray.h>
+#include <tf2/utils.h>
 #include <vector>
 #include <random>
-#include <math.h>
+
+#include "roomba_500driver_meiji/RoombaCtrl.h"
+
 
 class Particle
 {
@@ -35,17 +35,19 @@ class ParticleFilter
 public:
     ParticleFilter();
     void initialize();
-    void motionUpdate();
-    void move(double dx,double dy,double dyaw);
+    void motionUpdate(nav_msgs::Odometry last,nav_msgs::Odometry prev);
+    void move(double distance,double direction,double rotation);
     void measurementUpdate();
-    void weightNormalize();
     void resampling();
     void check_N();
-private:
-    double noiseAdd(double mu,double cov);
-    double angleSubstruct(double angle1, double angle2);
-    double angleOptimize(double angle);
+
     std::vector<Particle> particles_;
+
+private:
+    double setNoise(double mu,double cov);
+    double angleOptimize(double angle);
+    void weightNormalize();
+
     double N_;
     double init_x_;
     double init_y_;
@@ -53,7 +55,7 @@ private:
     double x_cov_;
     double y_cov_;
     double yaw_cov_;
-    Particle* pParticle_;
+
     Localizer* pMcl_;
 };
 
