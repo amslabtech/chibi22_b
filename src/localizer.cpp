@@ -50,7 +50,7 @@ void ParticleFilter::motionUpdate(nav_msgs::Odometry last, nav_msgs::Odometry pr
     double dyaw = angleOptimize(last_yaw - prev_yaw);
 
     double distance = sqrt(dx*dx + dy*dy);
-    double direction = angleOptimize(atan2(dy,dx), - prev_yaw);
+    double direction = angleOptimize(atan2(dy,dx) - prev_yaw);
     double rotation = angleOptimize(dyaw - direction);
 
     for(auto& p:particles_)
