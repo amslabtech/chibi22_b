@@ -18,13 +18,13 @@ void Particle::set(double x, double y, double yaw, double weight)
 
 ParticleFilter::ParticleFilter()
 {
-    N_ = mcl_ -> get_N();
-    init_x_ = mcl_ -> get_INIT_X();
-    init_y_ = mcl_ -> get_INIT_Y();
-    init_yaw_ = mcl_ -> get_INIT_YAW();
-    x_cov_ = mcl_ -> get_INIT_X_COV();
-    y_cov_ = mcl_ -> get_INIT_Y_COV();
-    yaw_cov_ = mcl_ -> get_INIT_YAW_COV();
+    N_ = pMcl_ -> get_N();
+    init_x_ = pMcl_ -> get_INIT_X();
+    init_y_ = pMcl_ -> get_INIT_Y();
+    init_yaw_ = pMcl_ -> get_INIT_YAW();
+    x_cov_ = pMcl_ -> get_INIT_X_COV();
+    y_cov_ = pMcl_ -> get_INIT_Y_COV();
+    yaw_cov_ = pMcl_ -> get_INIT_YAW_COV();
 }
 
 void ParticleFilter::initialize()
@@ -69,10 +69,11 @@ void ParticleFilter::move(double distance, double direction, double rotation)
     set(new_x, new_y, new_yaw, get_weight());
 }
 
-double set_noise(double mu, double cov)
+double Localizer::set_noise(double mu, double cov)
 {
     std::normal_distribution<> dist(mu,cov);
     return dist(engine)
+    //hello!world!
 }
 
 Localizer::Localizer():private_nh("~")
