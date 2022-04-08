@@ -67,7 +67,7 @@ void ParticleFilter::move(double distance, double direction, double rotation)
     new_yaw = optimize_angle(getPose_yaw() + rotation);
 
     set(new_x, new_y, new_yaw, get_weight());
-    set(); // test
+    // hello! test
 }
 
 double set_noise(double mu, double cov)
