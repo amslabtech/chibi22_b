@@ -67,7 +67,6 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~")
     sub_local_goal_ = nh_.subscribe("/local_goal", 10, &LocalPathPlanner::local_goal_callback, this);
     sub_pose_       = nh_.subscribe("/roomba/pose", 10, &LocalPathPlanner::pose_callback, this);
     sub_ob_poses_   = nh_.subscribe("/local_map/obstacle", 10, &LocalPathPlanner::ob_poses_callback, this);
-    // sub_local_map_  = nh_.subscribe("/local_map/local_map", 10, &LocalPathPlanner::local_map_callback, this);
 
     // Publisher
     pub_cmd_speed_    = nh_.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control", 1);
@@ -93,12 +92,6 @@ void LocalPathPlanner::ob_poses_callback(const geometry_msgs::PoseArray::ConstPt
 {
     ob_poses_ = *msg;
 }
-
-// local_mapのコールバック関数
-// void LocalPathPlanner::local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
-// {
-//     local_map_ = *msg;
-// }
 
 // Roombaの制御入力を行う
 void LocalPathPlanner::roomba_control(const double velocity, const double yawrate)
