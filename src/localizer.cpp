@@ -73,7 +73,7 @@ void ParticleFilter::move(double distance, double direction, double rotation)
 double set_noise(double mu, double cov)
 {
     std::normal_distribution<> dist(mu,cov);
-    return dist(engine)
+    return dist(engine);
 }
 
 Localizer::Localizer():private_nh("~")
