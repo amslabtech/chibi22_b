@@ -90,7 +90,7 @@ private:
 
 
     // ----- 変数 -----
-    int    hz_;              // ループ周波数
+    int    hz_;             // ループ周波数
     double max_vel_;        // 最高並進速度 [m/s]
     double min_vel_;        // 最低並進速度 [m/s]
     double max_yawrate_;    // 最高旋回速度 [rad/s]
