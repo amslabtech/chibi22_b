@@ -19,10 +19,10 @@ class Particle
 public:
     Particle(double x=0,double y=0,double yaw=0,double weight=0);
     void set(double x,double y,double yaw,double weight);
-    double getPose_x(){return x_;}
-    double getPose_y(){return y_;}
-    double getPose_yaw(){return yaw_;}
-    double getWeight(){return weight_;}
+    double get_pose_x(){return x_;}
+    double get_pose_y(){return y_;}
+    double get_pose_yaw(){return yaw_;}
+    double get_weight(){return weight_;}
 private:
     double x_;
     double y_;
@@ -35,18 +35,18 @@ class ParticleFilter
 public:
     ParticleFilter();
     void initialize();
-    void motionUpdate(nav_msgs::Odometry last,nav_msgs::Odometry prev);
-    void move(double distance,double direction,double rotation);
-    void measurementUpdate();
+    void motion_update(nav_msgs::Odometry last,nav_msgs::Odometry prev);
+    void move(double distance,double direction,double rotation)
+    void measurement_update();
     void resampling();
     void check_N();
 
     std::vector<Particle> particles_;
 
 private:
-    double setNoise(double mu,double cov);
-    double angleOptimize(double angle);
-    void weightNormalize();
+    double set_noise(double mu,double cov);
+    double optimize_angle(double angle);
+    void normalize_weight();
 
     double N_;
     double init_x_;
@@ -65,13 +65,13 @@ public:
     Localizer();
     void process();
 
-    double getN(){return N_;}
-    double getINIT_X(){return INIT_X_;}
-    double getINIT_Y(){return INIT_Y_;}
-    double getINIT_YAW(){return INIT_YAW_;}
-    double getINIT_X_COV(){return INIT_X_COV_;}
-    double getINIT_Y_COV(){return INIT_Y_COV_;}
-    double getINIT_YAW_COV(){return INIT_YAW_COV_;}
+    double get_N(){return N_;}
+    double get_INIT_X(){return INIT_X_;}
+    double get_INIT_Y(){return INIT_Y_;}
+    double get_INIT_YAW(){return INIT_YAW_;}
+    double get_INIT_X_COV(){return INIT_X_COV_;}
+    double get_INIT_Y_COV(){return INIT_Y_COV_;}
+    double get_INIT_YAW_COV(){return INIT_YAW_COV_;}
 
 private:
     void odometry_callback(nav_msgs::Odometry::ConstPtr &msg);
