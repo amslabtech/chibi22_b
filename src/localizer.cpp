@@ -1,21 +1,33 @@
 #include "localizer/localizer.h"
 
-std::random_device seed;
-std::mt19937 engine(seed());
+// 疑似乱数生成器
+std::random_device seed_gen;
+std::mt19937 engine(seed_gen());
 
+// ==== クラス Particle ====
+// コンストラクタ
 Particle::Particle(double x, double y, double yaw, double weight)
 {
-    set(x,y,yaw,weight);
+    set_pose(x,y,yaw);
+    set_weight(weight);
 }
 
-void Particle::set(double x, double y, double yaw, double weight)
+// pose の設定
+void Particle::set_pose(double x, double y, double yaw)
 {
     x_ = x;
     y_ = y;
     yaw_ = yaw;
+}
+
+// 重みの設定
+void Particle::set_weight(double weight)
+{
     weight_ = weight;
 }
 
+// ==== クラス ParticleFilter ====
+// コンストラクタ(Localizer のメンバ変数の値を取得)
 ParticleFilter::ParticleFilter()
 {
     N_ = pMcl_ -> get_N();
@@ -27,20 +39,21 @@ ParticleFilter::ParticleFilter()
     yaw_cov_ = pMcl_ -> get_INIT_YAW_COV();
 }
 
+// 初期化処理
 void ParticleFilter::initialize()
 {
-    check_N();
     double w = 1.0/(double)N_;
 
     for(int i=0; i<N_; i++){
         double x = set_noise(init_x_,x_cov_);
         double y = set_noise(init_y_,y_cov_);
         double yaw = set_noise(init_yaw_,yaw_cov_);
-        Particle p(x,y,yaw);
+        Particle p(x, y, yaw, w);
         particles_.push_back(p);
     }
 }
 
+// 移動量の算出
 void ParticleFilter::motion_update(nav_msgs::Odometry last, nav_msgs::Odometry prev)
 {
     double dx = last.pose.pose.position.x - prev.pose.pose.position.x;
@@ -53,30 +66,111 @@ void ParticleFilter::motion_update(nav_msgs::Odometry last, nav_msgs::Odometry p
     double direction = optimize_angle(atan2(dy,dx) - prev_yaw);
 
     for(auto& p:particles_)
-        p.move(distance, direction, dyaw);
+        move(p, distance, direction, dyaw);
 }
 
-void ParticleFilter::move(double distance, double direction, double rotation)
+// パーティクルの移動
+void ParticleFilter::move(Particle* p, double distance, double direction, double rotation)
 {
     distance = set_noise(distance, distance_cov_);
     direction = set_noise(direction, rotation_cov_);
     rotation = set_noise(rotation, rotation_cov_);
 
-    new_x = get_pose_x() + distance * cos( optimize_angle(direction + getPose_yaw()) );
-    new_y = get_pose_y() + distance * sin( optimize_angle(direction + getPose_yaw()) );
-    new_yaw = optimize_angle(getPose_yaw() + rotation);
+    new_x = p -> get_pose_x() + distance * cos( optimize_angle(direction + p -> getPose_yaw()) );
+    new_y = p -> get_pose_y() + distance * sin( optimize_angle(direction + p -> getPose_yaw()) );
+    new_yaw = optimize_angle(p -> getPose_yaw() + rotation);
 
-    set(new_x, new_y, new_yaw, get_weight());
+    p -> set(new_x, new_y, new_yaw, get_weight());
 }
 
-double set_noise(double mu, double cov)
+// ノイズを乗せた値を返す関数
+double ParticleFilter::set_noise(double mu, double cov)
 {
     std::normal_distribution<> dist(mu,cov);
     return dist(engine);
 }
 
+// 適切な角度 (-π ~ π) を返す
+void ParticleFilter::optimize_angle(angle)
+{
+    while(angle > M_PI)
+        angle -= 2*M_PI;
+    while(angle < -M_PI)
+        angle += 2*M_PI;
+}
+
+// 観測更新(センサの値と比較して重みを更新)
+void ParticleFilter::measurement_update()
+{
+
+}
+
+// 重みの正規化
+void ParticleFilter::normalize_weight()
+{
+    double sum = 0.0;
+    for(const auto &p : particles_)
+        sum += p -> get_weight();
+
+    for(auto &p : particles_)
+    {
+        double new_weight = get_weight() / sum;
+        set_weight(new_weight)
+    }
+}
+
+// リサンプリング
+void ParticleFilter::resampling()
+{
+    std::vector<Particle> new_particles;
+
+    std::uniform_int_distribution<> int_dist(0,N_-1);
+    std::uniform_real_distribution<> double_dist(0.0,get_max_weight()*2.0);
+
+    int index = int_dist(engine);
+    double beta = 0.0;
+
+    for(int i=0; i<N_; i++)
+    {
+        beta += double_dist;
+        while(beta > particles_[index] -> get_weight())
+        {
+            beta -= particles_[index] -> get_weight();
+            index = (index+1) % N_;
+        }
+        new_particles.push_back(particles_[index]);
+    }
+
+    particles_ = new_particles;
+    reset_weight();
+}
+
+// particles_ から最大の重みを取得
+double ParticleFilter::get_max_weight()
+{
+    double max = 0.0;
+
+    for(const auto &p : particles_)
+    {
+        if(max <= p -> get_weight())
+            max = p -> get_weight();
+    }
+
+    return max;
+}
+
+// 重みのリセット
+void ParticleFilter::reset_weight()
+{
+    for(auto &p : particles_)
+        p -> set_weight(1.0/particles_.size());
+}
+
+// ==== クラス Localizer ====
+// コンストラクタ
 Localizer::Localizer():private_nh("~")
 {
+    // パラメータの取得
     private_nh.getParam("hz",hz_);
     private_nh.getParam("N",N_);
     private_nh.getParam("INIT_X",INIT_X_);
@@ -86,17 +180,21 @@ Localizer::Localizer():private_nh("~")
     private_nh.getParam("INIT_Y_COV",INIT_Y_COV_);
     private_nh.getParam("INIT_YAW_COV",INIT_YAW_COV_);
 
-    laser_sub_ = nh.subscribe("/scan", 10, &Localizer::laser_callback, this);
-    odometry_sub_ = nh.subscribe("/roomba/odometry", 10, &Localizer::odometry_callback, this);
-    map_sub_ = nh.subscribe("/map", 10, &Localizer::map_callback, this);
+    // Subscriber
+    sub_laser = nh.subscribe("/scan", 10, &Localizer::laser_callback, this);
+    sub_odometry = nh.subscribe("/roomba/odometry", 10, &Localizer::odometry_callback, this);
+    sub_map_ = nh.subscribe("/map", 10, &Localizer::map_callback, this);
 
-    estimated_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/estimated_pose", 1);
-    p_cloud_pub_ = nh.advertise<geometry_msgs::PoseArray>("/p_cloud", 1);
+    // Publisher
+    pub_estimated_pose_ = nh.advertise<geometry_msgs::PoseStamped>("/estimated_pose", 1);
+    pub_particle_cloud_ = nh.advertise<geometry_msgs::PoseArray>("/p_cloud", 1);
 
-    estimated_pose.flame_id = "map";
-    p_cloud.header.flame_id = "map";
+    // publish する値のフレームを設定
+    estimated_pose_.header.flame_id = "map";
+    particle_cloud_.header.flame_id = "map";
 }
 
+// 各種コールバック関数
 void Localizer::odometry_callback(const nav_msgs::Odometry::ConstPtr &msg)
 {
     odometry_ = *msg;
@@ -112,6 +210,7 @@ void Localizer::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
     laser_ = *msg;
 }
 
+// ==== メイン関数 ====
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "localizer");
