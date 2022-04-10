@@ -12,25 +12,23 @@ class LocalGoalCreator
         void process();
     private:
         void global_path_callback(const nav_msgs::Path::ConstPtr &msg);
-        void estimated_pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+        void current_pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
         void select_local_goal();
 
-        int hz;
-        double local_goal_dist;
-        int lap_num;
-        int goal_index = 0;
-        int lap_count = 1;
-        bool global_path_get_flag = false;
-        bool estimated_pose_get_flag = false;
+        int hz_;
+        double local_goal_distance_;
+        int goal_index_;
+        bool is_global_path_checker = false;
+        bool is_current_pose_checker = false;
 
         ros::NodeHandle nh;
         ros::NodeHandle private_nh;
         ros::Subscriber global_path_sub;
-        ros::Subscriber estimated_pose_sub;
+        ros::Subscriber current_pose_sub;
         ros::Publisher local_goal_pub;
 
         nav_msgs::Path global_path;
-        geometry_msgs::PoseStamped estimated_pose;
+        geometry_msgs::PoseStamped current_pose;
         geometry_msgs::PoseStamped local_goal;
 };
 
