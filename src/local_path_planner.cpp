@@ -30,8 +30,8 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~")
     private_nh_.getParam("weight_vel", weight_vel_);
 
     // Subscriber
-    sub_local_goal_ = nh_.subscribe("/local_goal", 10, &LocalPathPlanner::local_goal_callback, this);
-    sub_ob_poses_   = nh_.subscribe("/local_map/obstacle", 10, &LocalPathPlanner::ob_poses_callback, this);
+    sub_local_goal_ = nh_.subscribe("/local_goal", 1, &LocalPathPlanner::local_goal_callback, this);
+    sub_ob_poses_   = nh_.subscribe("/local_map/obstacle", 1, &LocalPathPlanner::ob_poses_callback, this);
 
     // Publisher
     pub_cmd_speed_    = nh_.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control", 1);
