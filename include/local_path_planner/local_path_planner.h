@@ -9,7 +9,7 @@ speed         : 速度の総称(vel, yawrate)
 #define LOCAL_PATH_PLANNER
 
 #include <ros/ros.h>
-#include <geometry_msgs::TransformStamped.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
@@ -52,15 +52,15 @@ private:
     void local_goal_callback(const geometry_msgs::PointStamped::ConstPtr& msg);
     void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg);
 
-    void   roomba_control(const double velocity, const double yawrate);                         // Roombaの制御入力
-    void   move(State& state, const double velocity, const double yawrate);                     // 予測軌跡作成時における仮想ロボットの移動
+    void   roomba_control(const double velocity, const double yawrate);                                         // Roombaの制御入力
+    void   move(State& state, const double velocity, const double yawrate);                                     // 予測軌跡作成時における仮想ロボットの移動
     void   visualize_traj(const std::vector<State>& traj, const ros::Publisher& pub_local_path, ros::Time now); // 軌跡を可視化
-    double optimize_angle(double angle);                                                        // 適切な角度(-M_PI ~ M_PI)を返す
-    double calc_evaluation(const std::vector<State>& traj);                                     // 評価関数を計算
-    double calc_heading_eval(const std::vector<State>& traj);                                   // headingの評価関数を計算
-    double calc_dist_eval(const std::vector<State>& traj);                                      // distの評価関数を計算
-    double calc_vel_eval(const std::vector<State>& traj);                                       // velocityの評価関数を計算
-    std::vector<State> calc_traj(const double velocity, const double yawrate);            // 予測軌跡の作成
+    double optimize_angle(double angle);                                                                        // 適切な角度(-M_PI ~ M_PI)を返す
+    double calc_evaluation(const std::vector<State>& traj);                                                     // 評価関数を計算
+    double calc_heading_eval(const std::vector<State>& traj);                                                   // headingの評価関数を計算
+    double calc_dist_eval(const std::vector<State>& traj);                                                      // distの評価関数を計算
+    double calc_vel_eval(const std::vector<State>& traj);                                                       // velocityの評価関数を計算
+    std::vector<State> calc_traj(const double velocity, const double yawrate);                                  // 予測軌跡の作成
 
 
     // ----- 引数なし関数 -----
@@ -70,7 +70,7 @@ private:
 
 
     // ----- 変数 -----
-    bool    is_visible_; // 可視化するかの設定用
+    bool   is_visible_;     // 可視化するかの設定用
     int    hz_;             // ループ周波数
     double max_vel_;        // 最高並進速度 [m/s]
     double min_vel_;        // 最低並進速度 [m/s]
@@ -87,7 +87,7 @@ private:
 
     // msgの受け取り判定用
     bool flag_local_goal_ = false;
-    bool flag_ob_poses_ = false;
+    bool flag_ob_poses_   = false;
 
     // 重み定数
     double weight_heading_;
@@ -113,8 +113,8 @@ private:
     ros::Publisher pub_predict_path_;
 
     // pose関連
-    geometry_msgs::PointStamped local_goal_;   // local path用の目標位置
-    geometry_msgs::PoseArray    ob_poses_;     // 障害物のポーズの配列
+    geometry_msgs::PointStamped local_goal_; // local path用の目標位置
+    geometry_msgs::PoseArray    ob_poses_;   // 障害物のポーズの配列
 
     // tf
     tf2_ros::Buffer tf_buffer_;
