@@ -64,7 +64,7 @@ void LocalPathPlanner::ob_poses_callback(const geometry_msgs::PoseArray::ConstPt
     flag_ob_poses_ = true;
 }
 
-// main文で唯一実行する関数
+// 唯一main文で実行する関数
 void LocalPathPlanner::process()
 {
     ros::Rate loop_rate(hz_); // 制御周波数の設定
@@ -117,7 +117,7 @@ std::vector<double> LocalPathPlanner::calc_final_input()
 {
     std::vector<double> input{0.0, 0.0};          // {velocity, yawrate}
     std::vector<std::vector<State>> trajectories; // すべての軌跡格納用
-    double max_score = 0.0;                       // 評価値の最大値格納用
+    double max_score = -1e6;                      // 評価値の最大値格納用
     int index_of_max_score = 0;                   // 評価値の最大値に対する軌跡のインデックス格納用
 
     // ダイナミックウィンドウを計算
@@ -131,11 +131,7 @@ std::vector<double> LocalPathPlanner::calc_final_input()
         {
             const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
             const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
-            // trajectories.push_back(trajectory);
-            
-            // デバッグ用（壁に衝突していないパスを保持）
-            if(0.0 <= score)
-                trajectories.push_back(trajectory);
+            trajectories.push_back(trajectory);
 
             // 最大値の更新
             if(max_score < score)
@@ -165,7 +161,7 @@ std::vector<double> LocalPathPlanner::calc_final_input()
                 visualize_traj(trajectories[i], pub_predict_path_, now);
         }
     }
-    
+
     return input;
 }
 
@@ -276,7 +272,7 @@ double LocalPathPlanner::calc_dist_eval(const std::vector<State>& traj)
             // 壁に衝突したパスを評価
             if(dist <= roomba_radius_)
                 return -1e6;
-            
+
             // 最小値の更新
             if(dist < min_dist)
                 min_dist = dist;
