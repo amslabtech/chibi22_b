@@ -64,6 +64,44 @@ void LocalPathPlanner::ob_poses_callback(const geometry_msgs::PoseArray::ConstPt
     flag_ob_poses_ = true;
 }
 
+// main文で唯一実行する関数
+void LocalPathPlanner::process()
+{
+    ros::Rate loop_rate(hz_); // 制御周波数の設定
+    tf2_ros::TransformListener tf_listener(tf_buffer_);
+
+    while(ros::ok())
+    {
+        if(can_move())
+        {
+            const std::vector<double> input = calc_final_input();
+            roomba_control(input[0], input[1]);
+        }
+        else
+        {
+            roomba_control(0.0, 0.0);
+        }
+
+        ros::spinOnce();   // コールバック関数の実行
+        loop_rate.sleep(); // 周期が終わるまで待つ
+    }
+}
+
+// ゴールに着くまでTrueを返す
+bool LocalPathPlanner::can_move()
+{
+    if(!(flag_local_goal_ && flag_ob_poses_)) return false; // msg受信済みか
+
+    const double dx = local_goal_.point.x;
+    const double dy = local_goal_.point.y;
+    const double dist_to_goal = hypot(dx, dy); // 現在位置からゴールまでの距離
+
+    if(dist_to_goal > goal_tolerance_)
+        return true;
+    else
+        return false;
+}
+
 // Roombaの制御入力を行う
 void LocalPathPlanner::roomba_control(const double velocity, const double yawrate)
 {
@@ -74,24 +112,61 @@ void LocalPathPlanner::roomba_control(const double velocity, const double yawrat
     pub_cmd_speed_.publish(cmd_speed_);
 }
 
-// 予測軌跡作成時における仮想ロボットを移動
-void LocalPathPlanner::move(State& state, const double velocity, const double yawrate)
+// 最適な制御入力を計算
+std::vector<double> LocalPathPlanner::calc_final_input()
 {
-    state.yaw      += yawrate * dt_;
-    state.yaw       = optimize_angle(state.yaw);
-    state.x        += velocity * cos(state.yaw) * dt_;
-    state.y        += velocity * sin(state.yaw) * dt_;
-    state.velocity  = velocity;
-    state.yawrate   = yawrate;
-}
+    std::vector<double> input{0.0, 0.0};          // {velocity, yawrate}
+    std::vector<std::vector<State>> trajectories; // すべての軌跡格納用
+    double max_score = 0.0;                       // 評価値の最大値格納用
+    int index_of_max_score = 0;                   // 評価値の最大値に対する軌跡のインデックス格納用
 
-// 適切な角度(-M_PI ~ M_PI)を返す
-double LocalPathPlanner::optimize_angle(double angle)
-{
-    if(M_PI  < angle) angle -= 2.0*M_PI;
-    if(angle < -M_PI) angle += 2.0*M_PI;
+    // ダイナミックウィンドウを計算
+    calc_dynamic_window();
 
-    return angle;
+    // 並進速度と旋回速度のすべての組み合わせを評価
+    int i = 0; // 現在の軌跡のインデックス保持用
+    for(double velocity=dw_.min_vel; velocity<=dw_.max_vel; velocity+=vel_reso_)
+    {
+        for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
+        {
+            const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
+            const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
+            // trajectories.push_back(trajectory);
+            
+            // デバッグ用（壁に衝突していないパスを保持）
+            if(0.0 <= score)
+                trajectories.push_back(trajectory);
+
+            // 最大値の更新
+            if(max_score < score)
+            {
+                max_score = score;
+                input[0]  = velocity;
+                input[1]  = yawrate;
+                index_of_max_score = i;
+            }
+            i++;
+        }
+    }
+
+    // 現在速度の記録
+    roomba_.velocity = input[0];
+    roomba_.yawrate = input[1];
+
+    // pathの可視化
+    if(is_visible_)
+    {
+        ros::Time now = ros::Time::now();
+        for(i=0; i<trajectories.size(); i++)
+        {
+            if(i == index_of_max_score)
+                visualize_traj(trajectories[i], pub_optimal_path_, now);
+            else
+                visualize_traj(trajectories[i], pub_predict_path_, now);
+        }
+    }
+    
+    return input;
 }
 
 // Dynamic Windowを計算
@@ -127,6 +202,26 @@ std::vector<State> LocalPathPlanner::calc_traj(const double velocity, const doub
     }
 
     return trajectory;
+}
+
+// 予測軌跡作成時における仮想ロボットを移動
+void LocalPathPlanner::move(State& state, const double velocity, const double yawrate)
+{
+    state.yaw      += yawrate * dt_;
+    state.yaw       = optimize_angle(state.yaw);
+    state.x        += velocity * cos(state.yaw) * dt_;
+    state.y        += velocity * sin(state.yaw) * dt_;
+    state.velocity  = velocity;
+    state.yawrate   = yawrate;
+}
+
+// 適切な角度(-M_PI ~ M_PI)を返す
+double LocalPathPlanner::optimize_angle(double angle)
+{
+    if(M_PI  < angle) angle -= 2.0*M_PI;
+    if(angle < -M_PI) angle += 2.0*M_PI;
+
+    return angle;
 }
 
 // 評価関数を計算
@@ -200,21 +295,6 @@ double LocalPathPlanner::calc_vel_eval(const std::vector<State>& traj)
         return 0.0;
 }
 
-// ゴールに着くまでTrueを返す
-bool LocalPathPlanner::can_move()
-{
-    if(!(flag_local_goal_ && flag_ob_poses_)) return false; // msg受信済みか
-
-    const double dx = local_goal_.point.x;
-    const double dy = local_goal_.point.y;
-    const double dist_to_goal = hypot(dx, dy); // 現在位置からゴールまでの距離
-
-    if(dist_to_goal > goal_tolerance_)
-        return true;
-    else
-        return false;
-}
-
 // 軌跡を可視化
 void LocalPathPlanner::visualize_traj(const std::vector<State>& traj, const ros::Publisher& pub_local_path, ros::Time now)
 {
@@ -234,82 +314,4 @@ void LocalPathPlanner::visualize_traj(const std::vector<State>& traj, const ros:
     }
 
     pub_local_path.publish(local_path);
-}
-
-// 最適な制御入力を計算
-std::vector<double> LocalPathPlanner::calc_final_input()
-{
-    std::vector<double> input{0.0, 0.0};          // {velocity, yawrate}
-    std::vector<std::vector<State>> trajectories; // すべての軌跡格納用
-    double max_score = 0.0;                       // 評価値の最大値格納用
-    int index_of_max_score = 0;                   // 評価値の最大値に対する軌跡のインデックス格納用
-
-    // ダイナミックウィンドウを計算
-    calc_dynamic_window();
-
-    // 並進速度と旋回速度のすべての組み合わせを評価
-    int i = 0; // 現在の軌跡のインデックス保持用
-    for(double velocity=dw_.min_vel; velocity<=dw_.max_vel; velocity+=vel_reso_)
-    {
-        for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
-        {
-            const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
-            const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
-            
-            // 壁に衝突していないパスを保持
-            if(0.0 <= score)
-                trajectories.push_back(trajectory);
-
-            // 最大値の更新
-            if(max_score < score)
-            {
-                max_score = score;
-                input[0]  = velocity;
-                input[1]  = yawrate;
-                index_of_max_score = i;
-            }
-            i++;
-        }
-    }
-
-    // 現在速度の記録
-    roomba_.velocity = input[0];
-    roomba_.yawrate = input[1];
-
-    // pathの可視化
-    if(is_visible_)
-    {
-        ros::Time now = ros::Time::now();
-        for(i=0; i<trajectories.size(); i++)
-        {
-            if(i == index_of_max_score)
-                visualize_traj(trajectories[i], pub_optimal_path_, now);
-            else
-                visualize_traj(trajectories[i], pub_predict_path_, now);
-        }
-    }
-    
-    return input;
-}
-
-void LocalPathPlanner::process()
-{
-    ros::Rate loop_rate(hz_); // 制御周波数の設定
-    tf2_ros::TransformListener tf_listener(tf_buffer_);
-
-    while(ros::ok())
-    {
-        if(can_move())
-        {
-            const std::vector<double> input = calc_final_input();
-            roomba_control(input[0], input[1]);
-        }
-        else
-        {
-            roomba_control(0.0, 0.0);
-        }
-
-        ros::spinOnce();   // コールバック関数の実行
-        loop_rate.sleep(); // 周期が終わるまで待つ
-    }
 }

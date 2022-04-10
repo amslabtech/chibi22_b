@@ -51,7 +51,8 @@ private:
     // 各種コールバック関数
     void local_goal_callback(const geometry_msgs::PointStamped::ConstPtr& msg);
     void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg);
-
+    
+    // その他の関数
     void   roomba_control(const double velocity, const double yawrate);                                         // Roombaの制御入力
     void   move(State& state, const double velocity, const double yawrate);                                     // 予測軌跡作成時における仮想ロボットの移動
     void   visualize_traj(const std::vector<State>& traj, const ros::Publisher& pub_local_path, ros::Time now); // 軌跡を可視化
@@ -70,7 +71,7 @@ private:
 
 
     // ----- 変数 -----
-    bool   is_visible_;     // 可視化するかの設定用
+    bool   is_visible_;     // パスを可視化するかの設定用
     int    hz_;             // ループ周波数
     double max_vel_;        // 最高並進速度 [m/s]
     double min_vel_;        // 最低並進速度 [m/s]
