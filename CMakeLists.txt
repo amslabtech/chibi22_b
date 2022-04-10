@@ -138,7 +138,8 @@ include
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(local_path_planner src/local_path_planner.cpp)
+# add_executable(${PROJECT_NAME}_node src/chibi22_b_node.cpp)
+add_executable(local_path_planner_node src/local_path_planner_main.cpp src/local_path_planner.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -148,10 +149,14 @@ add_executable(local_path_planner src/local_path_planner.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(local_path_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(local_path_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(local_path_planner ${catkin_LIBRARIES})
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
+target_link_libraries(local_path_planner_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
