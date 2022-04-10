@@ -7,45 +7,11 @@ speed         : 速度の総称(vel, yawrate)
 
 #include "local_path_planner/local_path_planner.h"
 
-// ===== クラスRobot =====
-// コンストラクタ
-Robot::Robot()
-{
-    state_.x        = 0.0;
-    state_.y        = 0.0;
-    state_.yaw      = 0.0;
-    state_.velocity = 0.0;
-    state_.yawrate  = 0.0;
-}
-
-// poseを更新
-void Robot::update_pose(const geometry_msgs::PoseStamped pose)
-{
-    state_.x   = pose.pose.position.x;
-    state_.y   = pose.pose.position.y;
-    state_.yaw = tf2::getYaw(pose.pose.orientation);
-}
-
-// 直前の制御入力を記録
-void Robot::set_speed(const double velocity, const double yawrate)
-{
-    state_.velocity = velocity;
-    state_.yawrate  = yawrate;
-}
-
-// メンバ関数の値を返却する関数
-double Robot::x()        { return state_.x; }
-double Robot::y()        { return state_.y; }
-double Robot::yaw()      { return state_.yaw; }
-double Robot::velocity() { return state_.velocity; }
-double Robot::yawrate()  { return state_.yawrate; }
-
-
-// ===== クラスLocalPathPlanner =====
 // コンストラクタ
 LocalPathPlanner::LocalPathPlanner():private_nh_("~")
 {
     // パラメータの取得
+    private_nh_.getParam("is_visible", is_visible_);
     private_nh_.getParam("hz", hz_);
     private_nh_.getParam("max_vel", max_vel_);
     private_nh_.getParam("min_vel", min_vel_);
@@ -65,7 +31,6 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~")
 
     // Subscriber
     sub_local_goal_ = nh_.subscribe("/local_goal", 10, &LocalPathPlanner::local_goal_callback, this);
-    sub_pose_       = nh_.subscribe("/roomba/pose", 10, &LocalPathPlanner::pose_callback, this);
     sub_ob_poses_   = nh_.subscribe("/local_map/obstacle", 10, &LocalPathPlanner::ob_poses_callback, this);
 
     // Publisher
@@ -77,26 +42,32 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~")
 // local_goalのコールバック関数
 void LocalPathPlanner::local_goal_callback(const geometry_msgs::PointStamped::ConstPtr& msg)
 {
-    local_goal_ = *msg;
-}
-
-// poseのコールバック関数
-void LocalPathPlanner::pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
-{
-    current_pose_ = *msg;
-    roomba_.update_pose(current_pose_);
+    geometry_msgs::TransformStamped transform;
+    try
+    {
+        transform = tf_buffer_.lookupTransform("base_link", "map", ros::Time(0));
+        if(!flag_local_goal_) flag_local_goal_ = true;
+    }
+    catch(tf2::TransformException& ex)
+    {
+        ROS_WARN("%s", ex.what());
+        if(flag_local_goal_) flag_local_goal_ = false;
+        return;
+    }
+    tf2::doTransform(*msg, local_goal_, transform);
 }
 
 // ob_posesのコールバック関数
 void LocalPathPlanner::ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
     ob_poses_ = *msg;
+    if(!flag_ob_poses_) flag_ob_poses_ = true;
 }
 
 // Roombaの制御入力を行う
 void LocalPathPlanner::roomba_control(const double velocity, const double yawrate)
 {
-    cmd_speed_.mode           = 11; // 任意の動きを実行するモード
+    cmd_speed_.mode           = 11; // 任意の動作を実行するモード
     cmd_speed_.cntl.linear.x  = velocity;
     cmd_speed_.cntl.angular.z = yawrate;
 
@@ -130,10 +101,10 @@ void LocalPathPlanner::calc_dynamic_window()
     double Vs[] = {min_vel_, max_vel_, -max_yawrate_, max_yawrate_};
 
     // 運動モデルによるWindow
-    double Vd[] = {roomba_.velocity() - max_accel_*dt_,
-                   roomba_.velocity() + max_accel_*dt_,
-                   roomba_.yawrate()  - max_dyawrate_*dt_,
-                   roomba_.yawrate()  + max_dyawrate_*dt_};
+    double Vd[] = {roomba_.velocity - max_accel_*dt_,
+                   roomba_.velocity + max_accel_*dt_,
+                   roomba_.yawrate  - max_dyawrate_*dt_,
+                   roomba_.yawrate  + max_dyawrate_*dt_};
 
     // 最終的なDynamic Window
     dw_.min_vel     = std::max(Vs[0], Vd[0]);
@@ -143,15 +114,10 @@ void LocalPathPlanner::calc_dynamic_window()
 }
 
 // 予測軌跡を作成
-std::vector<State> LocalPathPlanner::calc_trajectory(const double velocity, const double yawrate)
+std::vector<State> LocalPathPlanner::calc_traj(const double velocity, const double yawrate)
 {
     std::vector<State> trajectory;           // 軌跡格納用の動的配列
     State state = {0.0, 0.0, 0.0, 0.0, 0.0}; // 軌跡作成用の仮想ロボット
-
-    // 現在のposeを代入
-    // state.x   = roomba_.x();
-    // state.y   = roomba_.y();
-    // state.yaw = roomba_.yaw();
 
     // 軌跡を格納
     for(double t=0.0; t<=predict_time_; t+=dt_)
@@ -164,19 +130,19 @@ std::vector<State> LocalPathPlanner::calc_trajectory(const double velocity, cons
 }
 
 // 評価関数を計算
-double LocalPathPlanner::calc_evaluation(const std::vector<State> traj)
+double LocalPathPlanner::calc_evaluation(const std::vector<State>& traj)
 {
     const double heading_score  = weight_heading_ * calc_heading_eval(traj);
     const double distance_score = weight_dist_    * calc_dist_eval(traj);
     const double velocity_score = weight_vel_     * calc_vel_eval(traj);
 
-    const double total_score    = heading_score + distance_score + velocity_score;
+    const double total_score = heading_score + distance_score + velocity_score;
 
     return total_score;
 }
 
 // headingの評価関数を計算
-double LocalPathPlanner::calc_heading_eval(const std::vector<State> traj)
+double LocalPathPlanner::calc_heading_eval(const std::vector<State>& traj)
 {
     // 最終時刻のロボットの方位
     const double theta = traj.back().yaw;
@@ -198,20 +164,24 @@ double LocalPathPlanner::calc_heading_eval(const std::vector<State> traj)
 }
 
 // distの評価関数を計算
-double LocalPathPlanner::calc_dist_eval(const std::vector<State> traj)
+double LocalPathPlanner::calc_dist_eval(const std::vector<State>& traj)
 {
     double min_dist = search_range_; // 最も近い障害物との距離
 
     // pathの点と障害物のすべての組み合わせを探索
-    for(auto& state : traj)
+    for(const auto& state : traj)
     {
-        for(auto& ob_pose : ob_poses_.poses)
+        for(const auto& ob_pose : ob_poses_.poses)
         {
             // pathのうちの１点と障害物の距離を計算
             const double dx   = ob_pose.position.x - state.x;
             const double dy   = ob_pose.position.y - state.y;
-            const double dist = sqrt(powf(dx, 2.0)+powf(dy, 2.0));
+            const double dist = hypot(dx, dy);
 
+            // 壁に衝突したパスを評価
+            if(dist <= roomba_radius_)
+                return -1e6;
+            
             // 最小値の更新
             if(dist < min_dist)
                 min_dist = dist;
@@ -222,7 +192,7 @@ double LocalPathPlanner::calc_dist_eval(const std::vector<State> traj)
 }
 
 // velocityの評価関数を計算
-double LocalPathPlanner::calc_vel_eval(const std::vector<State> traj)
+double LocalPathPlanner::calc_vel_eval(const std::vector<State>& traj)
 {
     if(0.0 < traj.back().velocity) // 前進
         return traj.back().velocity/max_vel_; // 正規化
@@ -233,9 +203,11 @@ double LocalPathPlanner::calc_vel_eval(const std::vector<State> traj)
 // ゴールに着くまでTrueを返す
 bool LocalPathPlanner::can_move()
 {
-    const double dx = local_goal_.point.x - roomba_.x();
-    const double dy = local_goal_.point.y - roomba_.y();
-    const double dist_to_goal = sqrt(pow(dx, 2.0) + pow(dy, 2.0)); // 現在位置からゴールまでの距離
+    if(!(flag_local_goal_ && flag_ob_poses_)) return false; // msg受信済みか
+
+    const double dx = local_goal_.point.x;
+    const double dy = local_goal_.point.y;
+    const double dist_to_goal = hypot(dx, dy); // 現在位置からゴールまでの距離
 
     if(dist_to_goal > goal_tolerance_)
         return true;
@@ -244,19 +216,17 @@ bool LocalPathPlanner::can_move()
 }
 
 // 軌跡を可視化
-void LocalPathPlanner::visualize_traj(const std::vector<State> traj, const ros::Publisher& pub_local_path)
+void LocalPathPlanner::visualize_traj(const std::vector<State>& traj, const ros::Publisher& pub_local_path, ros::Time now)
 {
-    ros::Time present_time = ros::Time::now();
-
     nav_msgs::Path local_path;
-    local_path.header.stamp = present_time;
+    local_path.header.stamp = now;
     local_path.header.frame_id = "base_link";
 
     geometry_msgs::PoseStamped pose;
-    pose.header.stamp = present_time;
+    pose.header.stamp = now;
     pose.header.frame_id = "base_link";
 
-    for(auto& state : traj)
+    for(const auto& state : traj)
     {
         pose.pose.position.x = state.x;
         pose.pose.position.y = state.y;
@@ -273,7 +243,9 @@ std::vector<double> LocalPathPlanner::calc_final_input()
     std::vector<std::vector<State>> trajectories; // すべての軌跡格納用
     double max_score = 0.0;                       // 評価値の最大値格納用
     int index_of_max_score = 0;                   // 評価値の最大値に対する軌跡のインデックス格納用
-    calc_dynamic_window();                        // ダイナミックウィンドウを計算
+
+    // ダイナミックウィンドウを計算
+    calc_dynamic_window();
 
     // 並進速度と旋回速度のすべての組み合わせを評価
     int i = 0; // 現在の軌跡のインデックス保持用
@@ -281,9 +253,12 @@ std::vector<double> LocalPathPlanner::calc_final_input()
     {
         for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
         {
-            const std::vector<State> trajectory = calc_trajectory(velocity, yawrate); // 予測軌跡の生成
+            const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
             const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
-            trajectories.push_back(trajectory);
+            
+            // 壁に衝突していないパスを保持
+            if(0.0 <= score)
+                trajectories.push_back(trajectory);
 
             // 最大値の更新
             if(max_score < score)
@@ -298,25 +273,29 @@ std::vector<double> LocalPathPlanner::calc_final_input()
     }
 
     // 現在速度の記録
-    roomba_.set_speed(input[0], input[1]);
+    roomba_.velocity = input[0];
+    roomba_.yawrate = input[1];
 
     // pathの可視化
-    i = 0;
-    for(auto& traj : trajectories)
+    if(is_visible_)
     {
-        if(index_of_max_score == i)
-            visualize_traj(traj, pub_optimal_path_);
-        else
-            visualize_traj(traj, pub_predict_path_);
-        i++;
+        ros::Time now = ros::Time::now();
+        for(i=0; i<trajectories.size(); i++)
+        {
+            if(i == index_of_max_score)
+                visualize_traj(traj, pub_optimal_path_, now);
+            else
+                visualize_traj(traj, pub_predict_path_, now);
+        }
     }
-
+    
     return input;
 }
 
 void LocalPathPlanner::process()
 {
     ros::Rate loop_rate(hz_); // 制御周波数の設定
+    tf2_ros::TransformListener tf_listener(tf_buffer_);
 
     while(ros::ok())
     {
@@ -328,7 +307,6 @@ void LocalPathPlanner::process()
         else
         {
             roomba_control(0.0, 0.0);
-            // break; // おそらく１つ目のウェイポイントでノードが終了してしまう
         }
 
         ros::spinOnce();   // コールバック関数の実行
