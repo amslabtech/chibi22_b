@@ -46,12 +46,12 @@ void LocalPathPlanner::local_goal_callback(const geometry_msgs::PointStamped::Co
     try
     {
         transform = tf_buffer_.lookupTransform("base_link", "map", ros::Time(0));
-        if(!flag_local_goal_) flag_local_goal_ = true;
+        flag_local_goal_ = true;
     }
     catch(tf2::TransformException& ex)
     {
         ROS_WARN("%s", ex.what());
-        if(flag_local_goal_) flag_local_goal_ = false;
+        flag_local_goal_ = false;
         return;
     }
     tf2::doTransform(*msg, local_goal_, transform);
@@ -61,7 +61,7 @@ void LocalPathPlanner::local_goal_callback(const geometry_msgs::PointStamped::Co
 void LocalPathPlanner::ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
     ob_poses_ = *msg;
-    if(!flag_ob_poses_) flag_ob_poses_ = true;
+    flag_ob_poses_ = true;
 }
 
 // Roombaの制御入力を行う
@@ -283,9 +283,9 @@ std::vector<double> LocalPathPlanner::calc_final_input()
         for(i=0; i<trajectories.size(); i++)
         {
             if(i == index_of_max_score)
-                visualize_traj(traj, pub_optimal_path_, now);
+                visualize_traj(trajectories[i], pub_optimal_path_, now);
             else
-                visualize_traj(traj, pub_predict_path_, now);
+                visualize_traj(trajectories[i], pub_predict_path_, now);
         }
     }
     
