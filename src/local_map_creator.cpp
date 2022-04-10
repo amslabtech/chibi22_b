@@ -33,7 +33,7 @@ void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg
 
 void LocalMapCreator::init_map()
 {
-    local_map.data.clear();
+    local_map.data.clear();  //配列の中身を初期化
     for(int i=0; size=local_map.info.width * local_map.info.height; i<size; i++) {
         local_map.data.push_back(-1);
     }

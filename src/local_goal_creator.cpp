@@ -2,12 +2,12 @@
 
 LocalGoalCreator::local_goal_creator():private_nh("~")
 {
-    private_nh.getParam("hz", hz);
-    private_nh.getParam("local_goal_dist", local_goal_dist);
-    private_nh.getParam("lap_num", lap_num);
+    private_nh.getParam("hz_", hz_);
+    private_nh.getParam("local_goal_dist_", local_goal_dist_);
+    private_nh.getParam("goal_index_", goal_index_);
 
     global_path_sub = nh.subscribe("/global_path", 1, &LocalGoalCreator::global_path_callback, this);
-    estimated_pose_sub = nh.subscribe("/estimated_pose", 10, &LocalGoalCreator::estimated_pose_callback, this);
+    current_pose_sub = nh.subscribe("/current_pose", 10, &LocalGoalCreator::current_pose_callback, this);
 
     local_goal_pub = nh.advertise<geometry_msgs::PoseStamped>("/local_goal", 10);
 }
@@ -15,42 +15,45 @@ LocalGoalCreator::local_goal_creator():private_nh("~")
 void LocalGoalCreator::global_path_callback(const nav_nsgs::Path::ConstPtr &msg)
 {
     global_path = *msg;
-    global_path_get_flag = true;
+    local_goal = global_path.poses[goal_index_];
+    is_global_path_checker = true;
 }
 
-void LocalGoalCreator::estimated_pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
+void LocalGoalCreator::current_pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-    estimated_pose = *msg;
-    estimated_pose_get_flag = true;
-    if(global_path_get_flag) {
-        select_local_goal();
-    }
+    current_pose = *msg;
+    is_current_pose_checker = true;
 }
 
 void LocalGoalCreator::select_local_goal()
 {
-    double dist = sqrt(pow(estimated_pose.pose.position.x - global_path.poses[goal_index].pose.position.x, 2) + pow(estimated_pose.pose.position.y - global_path.poses[goal_index].pose.position.y, 2));
+    double distance = sqrt(pow(current_pose.pose.position.x - global_path.poses[goal_index_].pose.position.x, 2) + pow(current_pose.pose.position.y - global_path.poses[goal_index_].pose.position.y, 2));
 
-    while((dist < local_goal_dist) && ((goal_index + 1) < int(global_path.poses.size()))) {
-        dist += 0.05;
-        goal_index += 1;
+    if(distance < local_goal_dist_)
+    {
+        goal_index_ += 3;
+
+        if(goal_index_ < global_path.poses.size())
+        {
+            local_goal = global_path.poses[goal_index_];
+        }
+        else
+        {
+            goal_index_ = global_path.poses.size() -1;
+            local_goal = global_path.poses[goal_index_];
+        }
     }
-    local_goal = global_path.poses[goal_index];
-    local_goal.header.frame_id = "map";
-    local_goal.header.stamp = ros::Time::now();
     local_goal.pose.orientation.w = 1;
-
-    if((goal_index == int(global_path.poses.size()) - 1) && (lap_count < lap_num)) {
-        goal_index = 0;
-        lap_count += 1;
-    }
 }
 
 void LocalGoalCreator::process()
 {
     ros::Rate loop_rate(hz);
     while(ros::ok()) {
-        if(global_path_get_flag && estimated_pose_get_flag) {
+        if((is_global_path_checker = true) && (is_current_pose_checker = true))
+        {
+            select_local_goal();
+            local_goal.header.frame_id = "map";
             local_goal_pub.publish(local_goal);
         }
         ros::spinOnce();
