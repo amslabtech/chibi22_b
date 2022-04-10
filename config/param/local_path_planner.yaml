@@ -3,7 +3,7 @@ hz: 10 # [Hz]
 
 # 速度制限
 max_vel: 0.3      # [m/s]
-min_vel: -0.2     # [m/s]
+min_vel: 0.0     # [m/s]
 max_yawrate: 0.55 # [rad/s]
 
 # 加速度制限
@@ -19,7 +19,7 @@ dt: 0.1
 predict_time: 3.0
 
 # 機体サイズ [m]
-roomba_radius: 0.2
+roomba_radius: 0.25
 
 # 重み定数 [-]
 weight_heading: 0.2
@@ -30,4 +30,4 @@ weight_vel: 1.0
 goal_tolerance: 0.5
 
 # 評価関数distで探索する範囲 [m]
-search_range: 5.0
+search_range: 0.95
