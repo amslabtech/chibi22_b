@@ -10,9 +10,11 @@ LocalMapCreator::local_map_creator():private_nh("~")
     private_nh.getparam("ignore_angle_mergin", ignore_angle_mergin);
 
     laser_sub = nh.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
+    odometry_sub = nh.subscribe("roomba/odometry", 10, &LocalMapCreator::odometry_callback, this);
     local_map_pub = nh.advertise<nav_msgs::OccupancyGrid>("local_map", 10);
     obstacle_poses_pub = nh.advertise<geometry_msgs::PoseArray>("obstacle_poses", 10);
-    obstacle_poses.header.frame_id = "base_link";
+
+    /*obstacle_poses.header.frame_id = "base_link";
     local_map.header.frame_id = "base_link";
     local_map.info.resolution = map_reso;
     local_map.info.width = map_size / map_reso;
@@ -20,21 +22,35 @@ LocalMapCreator::local_map_creator():private_nh("~")
     local_map.info.origin.position.x = - map_size / 2;
     local_map.info.origin.position.y = - map_size / 2;
     local_map.data.reserve(local_map.info.width * local_map.info.height);
-    init_map();
+    init_map();*/
 }
 
 void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
     laser = *msg;
-    init_map();
-    create_local_map();
-    laser_get_check = true;
+    is_laser_checker = true;
 }
+
+/*void LocalMapCreator::odometry_callback(const nav_msgs::Odometry::ConstPtr& msg)
+{
+    odometry = *msg;
+    is_odometry_checker = true;
+}
+
+float LocalMapCreator::get_yaw()
+{
+    double roll, pitch, yaw;
+    tf::Quaternion quat(odometry.pose.pose.orientation.x, odometry.pose.pose.orientation.y, odometry.pose.pose.orientation.z, odometry.pose.pose.orientation.w);
+    tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+
+    return float(yaw);
+}*/
 
 void LocalMapCreator::init_map()
 {
     local_map.data.clear();  //配列の中身を初期化
-    for(int i=0; size=local_map.info.width * local_map.info.height; i<size; i++) {
+    int size = local_map.info.width * local_map.info.height;
+    for(int i=0; i<size; i++) {
         local_map.data.push_back(-1);
     }
 }
@@ -44,10 +60,10 @@ int LocalMapCreator::xy_to_map_index(double x, double y)
     int index_x = int((x - local_map.info.origin.position.x) / local_map.info.resolution);
     int index_y = int((y - local_map.info.origin.position.y) / local_map.info.resolution);
 
-    return index_x + index_y * local_map.info.width;
+    return index_x + index_y;
 }
 
-bool LocalMapCreator::check_map_range(double x, double y)
+bool LocalMapCreator::is_map_range_checker(double x, double y)
 {
     double x_start = local_map.info.origin.position.x;
     double y_start = local_map.info.origin.position.y;
@@ -73,10 +89,8 @@ bool LocalMapCreator::is_ignore_angle(double angle)
     return true;
 }
 
-void LocalMapCreator::create_line(double yaw, double laser_range)
+void LocalMapCreator::create_line(double laser_range)
 {
-    double search_step = map_reso;
-
     if((laser_range <= roomba_radius) || (is_ignore_angle(yaw))) {
             laser_range = map_size;
     }
