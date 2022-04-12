@@ -27,7 +27,9 @@ void LocalGoalCreator::current_pose_callback(const geometry_msgs::PoseStamped::C
 
 void LocalGoalCreator::select_local_goal()
 {
-    double distance = sqrt(pow(current_pose.pose.position.x - global_path.poses[goal_index_].pose.position.x, 2) + pow(current_pose.pose.position.y - global_path.poses[goal_index_].pose.position.y, 2));
+    double dx = current_pose.pose.position.x - global_path.poses[goal_index_].pose.position.x;
+    double dy = current_pose.pose.position.y - global_path.poses[goal_index_].pose.position.y;
+    double distance = hypot(dx, dy);
 
     if(distance < local_goal_dist_)
     {
@@ -48,7 +50,7 @@ void LocalGoalCreator::select_local_goal()
 
 void LocalGoalCreator::process()
 {
-    ros::Rate loop_rate(hz);
+    ros::Rate loop_rate(hz_);
     while(ros::ok()) {
         if((is_global_path_checker = true) && (is_current_pose_checker = true))
         {

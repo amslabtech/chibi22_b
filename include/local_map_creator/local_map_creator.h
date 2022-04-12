@@ -22,7 +22,7 @@ class LocalMapCreator
         int xy_to_map_index(double x, double y);
         float get_yaw();
         bool is_map_range_checker(double x, double y);
-        bool is_ignore_angle(double angle);
+        bool is_ignore_angle_checker(double angle);
 
         int hz;
         int map_size;

@@ -77,7 +77,7 @@ bool LocalMapCreator::is_map_range_checker(double x, double y)
     }
 }
 
-bool LocalMapCreator::is_ignore_angle(double angle)
+bool LocalMapCreator::is_ignore_angle_checker(double angle)
 {
     if((angle > -3.0/4 * M_PI + ignore_angle_mergin) && (angle < -1.0/4 * M_PI - ignore_angle_mergin)) {
         return false;
@@ -89,9 +89,9 @@ bool LocalMapCreator::is_ignore_angle(double angle)
     return true;
 }
 
-void LocalMapCreator::create_line(double laser_range)
+void LocalMapCreator::create_line(double angle, double laser_range)
 {
-    if((laser_range <= roomba_radius) || (is_ignore_angle(yaw))) {
+    if((laser_range <= roomba_radius) || (is_ignore_angle_checker(angle) = true)) {
             laser_range = map_size;
     }
 
@@ -124,11 +124,11 @@ void LocalMapCreator::create_line(double laser_range)
 void LocalMapCreator::create_local_map()
 {
     obstacle_poses.poses.clear();
-    double scan_angle = laser.angle_max - laser.angle_min;
-    int laser_step = int(2 * map_reso * laser.ranges.size() / laser_density / scan_angle / map_size);
+    int scan_size = laser.ranges.size();
+    int scan_step = (laser.angle_max - laser.angle_min) / scan_size;
     double angle = 0;
 
-    for(int i=0; i<int(laser.ranges.size()) i+=laser_step) {
+    for(int i=0; i<scan_size; i+=scan_step) {
         angle = i * laser.angle_increment + laser.angle_min;
         create_line(angle, laser.ranges[i]);
     }
@@ -139,6 +139,7 @@ void LocalMapCreator::process()
     ros::Rate rate(hz);
     while(ros::ok()) {
         if(laser_get_check) {
+            create_local_map();
             local_map_pub.publish(local_map);
             obstacle_poses_pub.publish(obstacle_poses);
         }
