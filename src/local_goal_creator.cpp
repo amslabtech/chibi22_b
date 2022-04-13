@@ -3,8 +3,8 @@
 LocalGoalCreator::local_goal_creator():private_nh("~")
 {
     private_nh.getParam("hz_", hz_);
-    private_nh.getParam("local_goal_dist_", local_goal_dist_);
     private_nh.getParam("goal_index_", goal_index_);
+    private_nh.getParam("local_goal_dist_", local_goal_dist_);
 
     global_path_sub = nh.subscribe("/global_path", 1, &LocalGoalCreator::global_path_callback, this);
     current_pose_sub = nh.subscribe("/current_pose", 10, &LocalGoalCreator::current_pose_callback, this);

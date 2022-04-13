@@ -16,8 +16,8 @@ class LocalGoalCreator
         void select_local_goal();
 
         int hz_;
-        double local_goal_distance_;
         int goal_index_;
+        double local_goal_dist_;
         bool is_global_path_checker = false;
         bool is_current_pose_checker = false;
 
