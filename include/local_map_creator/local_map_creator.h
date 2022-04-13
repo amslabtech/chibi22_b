@@ -9,10 +9,10 @@
 class LocalMapCreator
 {
     public:
-        local_map_creator();
+        LocalMapCreator();
         void process();
     private:
-        void laser_callback(const sensor_msgs::LaserScan::ConctPtr&);
+        void laser_callback(const sensor_msgs::LaserScan::ConstPtr&);
         void create_line(double yaw, double laser_range);
         void create_local_map();
         void init_map();
@@ -25,18 +25,18 @@ class LocalMapCreator
         double map_reso_;
         double roomba_radius_;
 
-        bool is_laser_checker = false;
+        bool is_laser_checker_ = false;
 
-        ros::NodeHandle nh;
-        ros::NodeHandle private_nh;
+        ros::NodeHandle nh_;
+        ros::NodeHandle private_nh_;
 
-        ros::Subscriber laser_sub;
-        ros::Publisher local_map_pub;
-        ros::Publisher obstacle_poses_pub;
+        ros::Subscriber laser_sub_;
+        ros::Publisher local_map_pub_;
+        ros::Publisher obstacle_poses_pub_;
 
-        sensor_msgs::LaserScan laser;
-        nav_msgs::OccupancyGrid local_map;
-        geometry_msgs::PoseArray obstacle_poses;
+        sensor_msgs::LaserScan laser_;
+        nav_msgs::OccupancyGrid local_map_;
+        geometry_msgs::PoseArray obstacle_poses_;
 };
 
 #endif

@@ -141,8 +141,8 @@ include
 # add_executable(${PROJECT_NAME}_node src/chibi22_b_node.cpp)
 # add_executable(global_map_inflater src/global_map_inflater.cpp)
 # add_executable(global_path_planner src/global_path_planner.cpp)
-# add_executable(local_goal_creator src/local_goal_creator.cpp)
-# add_executable(local_map_creator src/local_map_creator.cpp)
+add_executable(local_goal_creator src/local_goal_creator.cpp)
+add_executable(local_map_creator src/local_map_creator.cpp)
 add_executable(local_path_planner src/local_path_planner_main.cpp src/local_path_planner.cpp)
 # add_executable(localizer src/localizer.cpp)
 
@@ -157,8 +157,8 @@ add_executable(local_path_planner src/local_path_planner_main.cpp src/local_path
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(global_map_inflater ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(global_path_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# add_dependencies(local_goal_creator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# add_dependencies(local_map_creator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(local_goal_creator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(local_map_creator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(local_path_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
@@ -168,8 +168,8 @@ add_dependencies(local_path_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 # )
 # target_link_libraries(global_map_inflater ${catkin_LIBRARIES})
 # target_link_libraries(global_path_planner ${catkin_LIBRARIES})
-# target_link_libraries(local_goal_creator ${catkin_LIBRARIES})
-# target_link_libraries(local_map_creator ${catkin_LIBRARIES})
+target_link_libraries(local_goal_creator ${catkin_LIBRARIES})
+target_link_libraries(local_map_creator ${catkin_LIBRARIES})
 target_link_libraries(local_path_planner ${catkin_LIBRARIES})
 # target_link_libraries(localizer ${catkin_LIBRARIES})
 
