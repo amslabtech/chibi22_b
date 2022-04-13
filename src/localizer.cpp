@@ -30,21 +30,23 @@ void Particle::set_weight(double weight)
 // コンストラクタ(Localizer のメンバ変数の値を取得)
 ParticleFilter::ParticleFilter()
 {
-    N_ = pMcl_ -> get_N();
-    init_x_ = pMcl_ -> get_INIT_X();
-    init_y_ = pMcl_ -> get_INIT_Y();
-    init_yaw_ = pMcl_ -> get_INIT_YAW();
-    x_cov_ = pMcl_ -> get_INIT_X_COV();
-    y_cov_ = pMcl_ -> get_INIT_Y_COV();
-    yaw_cov_ = pMcl_ -> get_INIT_YAW_COV();
+    num_ = pMcl_ -> get_num();
+    init_x_ = pMcl_ -> get_init_x();
+    init_y_ = pMcl_ -> get_init_y();
+    init_yaw_ = pMcl_ -> get_init_yaw();
+    x_cov_ = pMcl_ -> get_init_x_cov();
+    y_cov_ = pMcl_ -> get_init_y_cov();
+    yaw_cov_ = pMcl_ -> get_init_yaw_cov();
+    distance_noise_ratio_ = pMcl_ -> get_init_distance_noise_ratio();
+    rotation_noise_ratio_ = pMcl_ -> get_init_rotation_noise_ratio();
 }
 
 // 初期化処理
 void ParticleFilter::initialize()
 {
-    double w = 1.0/(double)N_;
+    double w = 1.0/(double)num_;
 
-    for(int i=0; i<N_; i++){
+    for(int i=0; i<num_; i++){
         double x = set_noise(init_x_,x_cov_);
         double y = set_noise(init_y_,y_cov_);
         double yaw = set_noise(init_yaw_,yaw_cov_);
@@ -58,8 +60,8 @@ void ParticleFilter::motion_update(nav_msgs::Odometry last, nav_msgs::Odometry p
 {
     double dx = last.pose.pose.position.x - prev.pose.pose.position.x;
     double dy = last.pose.pose.position.y - prev.pose.pose.position.y;
-    double last_yaw = tf2::getYaw(last.pose.orientation);
-    double prev_yaw = tf2::getYaw(prev.pose.orientation);
+    double last_yaw = tf2::getYaw(last.pose.pose.orientation);
+    double prev_yaw = tf2::getYaw(prev.pose.pose.orientation);
     double dyaw = optimize_angle(last_yaw - prev_yaw);
 
     double distance = hypot(dx, dy);
@@ -72,15 +74,15 @@ void ParticleFilter::motion_update(nav_msgs::Odometry last, nav_msgs::Odometry p
 // パーティクルの移動
 void ParticleFilter::move(Particle& p, double distance, double direction, double rotation)
 {
-    distance = set_noise(distance, distance_cov_);
-    direction = set_noise(direction, rotation_cov_);
-    rotation = set_noise(rotation, rotation_cov_);
+    distance = set_noise(distance, distance_noise_ratio_);
+    direction = set_noise(direction, rotation_noise_ratio_);
+    rotation = set_noise(rotation, rotation_noise_ratio_);
 
-    new_x = p.get_pose_x() + distance * cos( optimize_angle(direction + p.get_pose_yaw()) );
-    new_y = p.get_pose_y() + distance * sin( optimize_angle(direction + p.get_pose_yaw()) );
-    new_yaw = optimize_angle(p.get_pose_yaw() + rotation);
+    double new_x = p.get_pose_x() + distance * cos( optimize_angle(direction + p.get_pose_yaw()) );
+    double new_y = p.get_pose_y() + distance * sin( optimize_angle(direction + p.get_pose_yaw()) );
+    double new_yaw = optimize_angle(p.get_pose_yaw() + rotation);
 
-    p.set(new_x, new_y, new_yaw, p.get_weight());
+    p.set_pose(new_x, new_y, new_yaw);
 }
 
 // ノイズを乗せた値を返す関数
@@ -91,12 +93,14 @@ double ParticleFilter::set_noise(double mu, double cov)
 }
 
 // 適切な角度 (-π ~ π) を返す
-void ParticleFilter::optimize_angle(angle)
+double ParticleFilter::optimize_angle(double angle)
 {
     if(angle > M_PI)
         angle -= 2*M_PI;
     if(angle < -M_PI)
         angle += 2*M_PI;
+
+    return angle;
 }
 
 // 観測更新(センサの値と比較して重みを更新)
@@ -115,7 +119,7 @@ void ParticleFilter::normalize_weight()
     for(auto &p : particles_)
     {
         double new_weight = p.get_weight() / sum;
-        p.set_weight(new_weight)
+        p.set_weight(new_weight);
     }
 }
 
@@ -124,19 +128,19 @@ void ParticleFilter::resampling()
 {
     std::vector<Particle> new_particles;
 
-    std::uniform_int_distribution<> int_dist(0,N_-1);
+    std::uniform_int_distribution<> int_dist(0,num_-1);
     std::uniform_real_distribution<> double_dist(0.0,get_max_weight()*2.0);
 
     int index = int_dist(engine);
     double beta = 0.0;
 
-    for(int i=0; i<N_; i++)
+    for(int i=0; i<num_; i++)
     {
-        beta += double_dist;
+        beta += double_dist(engine);
         while(beta > particles_[index].get_weight())
         {
             beta -= particles_[index].get_weight();
-            index = (index+1) % N_;
+            index = (index+1) % num_;
         }
         new_particles.push_back(particles_[index]);
     }
@@ -168,26 +172,28 @@ void ParticleFilter::reset_weight()
 
 // ==== クラス Localizer ====
 // コンストラクタ
-Localizer::Localizer():private_nh("~")
+Localizer::Localizer():private_nh_("~")
 {
     // パラメータの取得
-    private_nh.getParam("hz",hz_);
-    private_nh.getParam("N",N_);
-    private_nh.getParam("INIT_X",INIT_X_);
-    private_nh.getParam("INIT_Y",INIT_Y_);
-    private_nh.getParam("INIT_YAW",INIT_YAW_);
-    private_nh.getParam("INIT_X_COV",INIT_X_COV_);
-    private_nh.getParam("INIT_Y_COV",INIT_Y_COV_);
-    private_nh.getParam("INIT_YAW_COV",INIT_YAW_COV_);
+    private_nh_.getParam("hz",hz_);
+    private_nh_.getParam("init_num",init_num_);
+    private_nh_.getParam("init_x",init_x_);
+    private_nh_.getParam("init_y",init_y_);
+    private_nh_.getParam("init_yaw",init_yaw_);
+    private_nh_.getParam("init_x_cov",init_x_cov_);
+    private_nh_.getParam("init_y_cov",init_y_cov_);
+    private_nh_.getParam("init_yaw_cov",init_yaw_cov_);
+    private_nh_.getParam("init_distance_noise_ratio",init_distance_noise_ratio_);
+    private_nh_.getParam("init_rotation_noise_ratio",init_rotation_noise_ratio_);
 
     // Subscriber
-    sub_laser = nh.subscribe("/scan", 10, &Localizer::laser_callback, this);
-    sub_odometry = nh.subscribe("/roomba/odometry", 10, &Localizer::odometry_callback, this);
-    sub_map_ = nh.subscribe("/map", 10, &Localizer::map_callback, this);
+    sub_laser_ = nh_.subscribe("/scan", 10, &Localizer::laser_callback, this);
+    sub_odometry_ = nh_.subscribe("/roomba/odometry", 10, &Localizer::odometry_callback, this);
+    sub_map_ = nh_.subscribe("/map", 10, &Localizer::map_callback, this);
 
     // Publisher
-    pub_estimated_pose_ = nh.advertise<geometry_msgs::PoseStamped>("/estimated_pose", 1);
-    pub_particle_cloud_ = nh.advertise<geometry_msgs::PoseArray>("/particle_cloud", 1);
+    pub_estimated_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/estimated_pose", 1);
+    pub_particle_cloud_ = nh_.advertise<geometry_msgs::PoseArray>("/particle_cloud", 1);
 }
 
 // 各種コールバック関数
@@ -231,8 +237,8 @@ void Localizer::process()
         {
             pf_ -> motion_update(last_odometry_, prev_odometry_);
         }
-        pf -> measurement_update();
-        pf -> resampling();
+        pf_ -> measurement_update();
+        pf_ -> resampling();
 
         publish_particles();
 
@@ -241,10 +247,10 @@ void Localizer::process()
     }
 }
 
-Localizer::publish_particles()
+void Localizer::publish_particles()
 {
-    particle_cloud_msg_.header.stamp = ros::Time::now();        // 現在時刻を取得
-    particle_cloud_msg_.header.frame_id = "map";                // パブリッシュするフレームの設定
+    particle_cloud_msg_.header.stamp = ros::Time::now(); // 現在時刻を取得
+    particle_cloud_msg_.header.frame_id = "map"; // パブリッシュするフレームの設定
     particle_cloud_msg_.poses.resize(pf_ -> particles_.size()); // パブリッシュする PoseArray 配列のサイズを particles_ のサイズに合わせる
 
     for(int i=0; i< (pf_ -> particles_.size()); i++)
