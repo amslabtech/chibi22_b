@@ -79,6 +79,7 @@ void AStar::set_waypoint()
         {2595,2520},
         {2595,2820},
         {1950,2820},
+        // {1930,2670},
         {1950,2520},
     };
 }
@@ -116,6 +117,20 @@ void AStar::make_heuristic(int Phase){
     std::cout << "made heuristic\n" << std::endl;
 }
 
+bool AStar::is_low_cost(int i){
+        if(open_list[i].f < min_f && open_list[i].f >= 0)
+            return true;
+        else
+            return false;
+}
+
+bool AStar::is_contact(int i){
+        if(fabs(open_list[i].x-pre_p_Node.x) <= 1 && fabs(open_list[i].y-pre_p_Node.y) <= 1)
+            return true;
+        else
+            return false;
+}
+
 //親ノードの探索
 void AStar::set_pNode()
 {
@@ -123,24 +138,52 @@ void AStar::set_pNode()
     p_Node = init_Node;                         //親ノードの初期化
     p_Node.g = 1;
     p_Node.f = 1e6;
-    min_f = 1e10;
+    min_f = 1e+10;
+    dist_wp = 1e20;
+    pre_dist_wp = 1e20;
+    current_delta = 5;
 
+    //最小探索
     for(int i=open_list.size()-1; i>=0; i--)
-    {         //最小探索
-        if(open_list[i].f < min_f && open_list[i].f >= 0)
+    {
+        dist_wp = std::sqrt(std::pow(open_list[i].x - x_waypoint, 2) + std::pow(open_list[i].y - y_waypoint, 2));
+        if(is_low_cost(i) && is_contact(i))
         {
-            if(fabs(open_list[i].x-pre_p_Node.x <= 1) && fabs(open_list[i].y-pre_p_Node.y <= 1))
+            if(dist_wp <= pre_dist_wp)
             {
-                min_f = open_list[i].f;
-                p_Node = open_list[i];  //親ノードに設定
-                open_list[i].f = 1e6;
-            }
-            else
-            {
-                // std::cout << "test p_Node.x:" << p_Node.x << " pre.x:" << pre_p_Node.x << " p_Node.y:" << p_Node.y << " pre.y" << pre_p_Node.y << std::endl;
+                if(x_waypoint != pre_p_Node.x && y_waypoint != pre_p_Node.y)
+                {
+                    if(open_list[i].x - pre_p_Node.x == 0 && open_list[i].y - pre_p_Node.y == 1) current_delta = 0;
+                    else if(open_list[i].x - pre_p_Node.x == 1 && open_list[i].y - pre_p_Node.y == 0) current_delta = 1;
+                    else if(open_list[i].x - pre_p_Node.x == 0 && open_list[i].y - pre_p_Node.y == -1) current_delta = 2;
+                    else if(open_list[i].x - pre_p_Node.x == -1 && open_list[i].y - pre_p_Node.y == 0) current_delta = 3;
+                    std::cout << "test current_delta:" << current_delta << std::endl;
+                    if(current_delta != pre_delta)
+                    {
+                        std::cout << "test dist:" << dist_wp << " pre_dist_wp:" << pre_dist_wp << std::endl;
+                        min_f = open_list[i].f;
+                        pre_dist_wp = dist_wp;
+                        p_Node = open_list[i];  //親ノードに設定
+                        open_list[i].f = 1e6;
+                        std::cout << "test p_x:" << p_Node.x << " y:" << p_Node.y << std::endl;
+                    }
+                }
+                else
+                {
+                    std::cout << "test dist:" << dist_wp << " pre_dist_wp:" << pre_dist_wp << std::endl;
+                    min_f = open_list[i].f;
+                    pre_dist_wp = dist_wp;
+                    p_Node = open_list[i];  //親ノードに設定
+                    open_list[i].f = 1e6;
+                    std::cout << "test p_x:" << p_Node.x << " y:" << p_Node.y << std::endl;
+                }
             }
         }
     }
+    if(current_delta == 0) pre_delta = 0;
+    else if(current_delta == 1) pre_delta = 1;
+    else if(current_delta == 2) pre_delta = 2;
+    else if(current_delta == 3) pre_delta = 3;
 
     //エラー処理
     if(min_f >= 1e6)
@@ -155,6 +198,7 @@ void AStar::set_pNode()
 void AStar::set_kNode()
 {
     int kn_size = k_Node.size();                            //子ノードリストの大きさを保存
+    //子ノードリストを空にする
     for(int i=0; i<kn_size; i++)
     {
         k_Node.pop_back();
@@ -171,8 +215,8 @@ void AStar::set_kNode()
         k_Node[i].y = p_Node.y + delta[i][1];
         //子ノードのコスト求める
         // if(map_grid[k_Node[i].x][k_Node[i].y] == 0){        //障害物が存在したらg値大
-        if(map_grid[k_Node[i].x][k_Node[i].y] <= 100)
-        {        //test
+        if(map_grid[k_Node[i].x][k_Node[i].y] <= 100)       //test
+        {
             k_Node[i].g = p_Node.g + 1;
         }
         else
@@ -221,6 +265,7 @@ void AStar::add_path()
     path_point.pose.orientation.w = 1;
     path_point.header.frame_id = "map";
     wp_path.poses.push_back(path_point);
+    std::cout << "test add x:" << p_Node.x << " y:" << p_Node.y << std::endl;
     std::cout << "test add path_point.x:" << path_point.pose.position.x << " y:" << path_point.pose.position.y << "\n" << std::endl;
 }
 
@@ -290,8 +335,8 @@ void AStar::astar_process()
         set_NodeList(open_list);                //openリストcloseリストの初期化
         set_NodeList(close_list);
         wp_path.poses.clear();                  //ウェイポイント間のパスの初期化
-        int x_waypoint = waypoint[phase][0];    //ウェイポイントの保存
-        int y_waypoint = waypoint[phase][1];
+        x_waypoint = waypoint[phase][0];    //ウェイポイントの保存
+        y_waypoint = waypoint[phase][1];
         std::cout << "test wp.x:" << x_waypoint << " y:" <<  y_waypoint << std::endl;
 
         //スタートノードをOpenリストに格納
@@ -302,7 +347,7 @@ void AStar::astar_process()
         open_list.push_back(origin);
         p_Node = origin;
 
-        std::cout << "test origin.x:" << origin.x << " y:" << origin.y << " f:" << origin.f << std::endl;
+        std::cout << "test origin.x:" << origin.x << " y:" << origin.y << " f:" << origin.f << "\n" << std::endl;
 
         while(!is_reached)
         {                                              //ウェイポイントに到達するまで
