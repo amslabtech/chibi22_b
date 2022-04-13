@@ -2,27 +2,24 @@
 
 LocalMapCreator::local_map_creator():private_nh("~")
 {
-    private_nh.getparam("hz", hz);
-    private_nh.getparam("map_size", map_size);
-    private_nh.getparam("map_reso", map_reso);
-    private_nh.getparam("laser_density", laser_density);
-    private_nh.getparam("roomba_radius", roomba_radius);
-    private_nh.getparam("ignore_angle_mergin", ignore_angle_mergin);
+    private_nh.getparam("hz_", hz_);
+    private_nh.getparam("map_size_", map_size_);
+    private_nh.getparam("map_reso_", map_reso_);
+    private_nh.getparam("roomba_radius_", roomba_radius_);
 
     laser_sub = nh.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
-    odometry_sub = nh.subscribe("roomba/odometry", 10, &LocalMapCreator::odometry_callback, this);
     local_map_pub = nh.advertise<nav_msgs::OccupancyGrid>("local_map", 10);
     obstacle_poses_pub = nh.advertise<geometry_msgs::PoseArray>("obstacle_poses", 10);
 
-    /*obstacle_poses.header.frame_id = "base_link";
+    obstacle_poses.header.frame_id = "base_link";
     local_map.header.frame_id = "base_link";
     local_map.info.resolution = map_reso;
-    local_map.info.width = map_size / map_reso;
-    local_map.info.height = map_size / map_reso;
-    local_map.info.origin.position.x = - map_size / 2;
-    local_map.info.origin.position.y = - map_size / 2;
+    local_map.info.width = map_size_ / map_reso_;
+    local_map.info.height = map_size_ / map_reso_;
+    local_map.info.origin.position.x = 0;
+    local_map.info.origin.position.y = 0;
     local_map.data.reserve(local_map.info.width * local_map.info.height);
-    init_map();*/
+    init_map();
 }
 
 void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
@@ -30,21 +27,6 @@ void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg
     laser = *msg;
     is_laser_checker = true;
 }
-
-/*void LocalMapCreator::odometry_callback(const nav_msgs::Odometry::ConstPtr& msg)
-{
-    odometry = *msg;
-    is_odometry_checker = true;
-}
-
-float LocalMapCreator::get_yaw()
-{
-    double roll, pitch, yaw;
-    tf::Quaternion quat(odometry.pose.pose.orientation.x, odometry.pose.pose.orientation.y, odometry.pose.pose.orientation.z, odometry.pose.pose.orientation.w);
-    tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-
-    return float(yaw);
-}*/
 
 void LocalMapCreator::init_map()
 {
@@ -79,42 +61,46 @@ bool LocalMapCreator::is_map_range_checker(double x, double y)
 
 bool LocalMapCreator::is_ignore_angle_checker(double angle)
 {
-    if((angle > -3.0/4 * M_PI + ignore_angle_mergin) && (angle < -1.0/4 * M_PI - ignore_angle_mergin)) {
+    if(angle < 1/16 * M_PI) {
         return false;
-    } else if((angle > -1.0/4 * M_PI + ignore_angle_mergin) && (angle < 1.0/4 * M_PI - ignore_angle_mergin)) {
+    } else if((angle > 7/16 * M_PI) && (angle < 9/16 * M_PI )) {
         return false;
-    } else if((angle > 1.0/4 * M_PI + ignore_angle_mergin) && (angle < 3.0/4 * M_PI - ignore_angle_mergin)) {
+    } else if((angle > 15/16 * M_PI) && (angle < 17/16 * M_PI)) {
         return false;
+    } else if(angle > 23/16 * M_PI) {
+        return false;
+    } else {
+        return true;
     }
-    return true;
 }
 
 void LocalMapCreator::create_line(double angle, double laser_range)
 {
-    if((laser_range <= roomba_radius) || (is_ignore_angle_checker(angle) = true)) {
+    if(laser_range <= roomba_radius) {
             laser_range = map_size;
     }
 
     double x_now = 0;
     double y_now = 0;
+    int map_index = xy_to_map_index(x_now, y_now);
 
-    for(double dist_from_start = 0; dist_from_start < map_size; dist_from_start += search_step) {
-        x_now = dist_from_start * std::cos(yaw);
-        y_now = dist_from_start * std::sin(yaw);
+    for(double dist_from_start = 0; dist_from_start < map_size; dist_from_start += map_reso) {
+        x_now = dist_from_start * std::cos(angle);
+        y_now = dist_from_start * std::sin(angle);
 
-        if(!check_map_range(x_now, y_now)) {
+        if(is_map_range_checker(x_now, y_now) = false) {
             return;
         }
-
-        int map_index = xy_to_map_index(x_now, y_now);
-
-        if(dist_from_start >= laser_range) {
-            local_map.data[map_index] = 100;
-            geometry_msgs::Pose obstacle_pose;
-            obstacle_pose.position.x = x_now;
-            obstacle_pose.position.y = y_now;
-            obstacle_poses.poses.push_back(obstacle_pose);
-            return;
+        if(is_ignore_angle_checker(angle) = true) {
+            if(dist_from_start >= laser_range) {
+                local_map.data[map_index] = 100;
+                geometry_msgs::Pose obstacle_pose;
+                obstacle_pose.position.x = x_now;
+                obstacle_pose.position.y = y_now;
+                obstacle_poses.poses.push_back(obstacle_pose);
+            } else {
+                local_map.data[map_index] = 0;
+            }
         } else {
             local_map.data[map_index] = 0;
         }
@@ -136,15 +122,16 @@ void LocalMapCreator::create_local_map()
 
 void LocalMapCreator::process()
 {
-    ros::Rate rate(hz);
+    ros::Rate rate(hz_);
     while(ros::ok()) {
-        if(laser_get_check) {
+        if(is_laser_checker = true) {
+            init_map();
             create_local_map();
             local_map_pub.publish(local_map);
             obstacle_poses_pub.publish(obstacle_poses);
         }
         ros::spinOnce();
-        rate::sleep();
+        loop_rate.sleep();
     }
 }
 
