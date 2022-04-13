@@ -42,7 +42,7 @@ public:
     ParticleFilter();　                                                      // コンストラクタ(メンバ変数のセット)
     void initialize();                                                       // パーティクルの新規作成
     void motion_update(nav_msgs::Odometry last,nav_msgs::Odometry prev);     // パーティクルの移動量を算出
-    void move(Particle* p,double distance,double direction,double rotation); // パーティクルを移動
+    void move(Particle& p,double distance,double direction,double rotation); // パーティクルを移動
     void measurement_update();　　　　　　　　　　　　　　　　　　　　　　　 // 観測更新(センサの値と比較して重みを更新)
     void resampling();                                                       // リサンプリング
     void check_N();　　　　　　　　　　　　　　　　　　　　　　　　　　　　　// ゼロ割対策
@@ -92,6 +92,8 @@ private:
     void map_callback(nav_msgs::OccupancyGrid::ConstPtr &msg);
     void laser_callback(sensor_msgs::LaserScan::ConstPtr &msg);
 
+    void publish_particles();
+
     int hz_; // ループ周波数
 
     // 各種初期値
@@ -103,6 +105,11 @@ private:
     double init_y_cov_;
     double init_yaw_cov_;
 
+    bool init_request_ = true;  // 初期化実行用フラグ
+    bool get_odometry_ = false; // odometry を取得したか
+
+    ParticleFilter* pf_;
+
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
 
@@ -113,8 +120,8 @@ private:
     ros::Publisher pub_estimated_pose_;
     ros::Publisher pub_particle_cloud_;
 
-    geometry_msgs::PoseStamped estimated_pose_; // 一意に推定した pose
-    geometry_msgs::PoseArray particle_cloud_;　 // パーティクルの pose
+    geometry_msgs::PoseStamped estimated_pose_msg_; // 一意に推定した pose
+    geometry_msgs::PoseArray particle_cloud_msg_;　 // パーティクルの pose
 
     nav_msgs::Odometry last_odometry_; // 最新のオドメトリ
     nav_msgs::Odometry prev_odometry_; // 前のオドメトリ
