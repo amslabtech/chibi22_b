@@ -1,4 +1,4 @@
-#include "chibi22_b/global_map_inflater.h"
+#include "global_map_inflater/global_map_inflater.h"
 
 Global_Map_Inflater::Global_Map_Inflater():private_nh("~"),nh("")
 {
