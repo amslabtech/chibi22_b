@@ -6,5 +6,6 @@
 
     <!-- node launch-->
     <node pkg="chibi22_b" type="localizer" name="localizer" >
-        <rosparam command="load" file="$(arg localizer)"/>
+        <rosparam command="load" file="$(arg localizer_settings)"/>
+    </node>
 </launch>
