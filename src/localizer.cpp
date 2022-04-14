@@ -28,28 +28,25 @@ void Particle::set_weight(double weight)
 
 // ==== クラス ParticleFilter ====
 // コンストラクタ(Localizer のメンバ変数の値を取得)
-ParticleFilter::ParticleFilter()
+ParticleFilter::ParticleFilter(Parameter param)
 {
-    num_ = pMcl_ -> get_num();
-    init_x_ = pMcl_ -> get_init_x();
-    init_y_ = pMcl_ -> get_init_y();
-    init_yaw_ = pMcl_ -> get_init_yaw();
-    x_cov_ = pMcl_ -> get_init_x_cov();
-    y_cov_ = pMcl_ -> get_init_y_cov();
-    yaw_cov_ = pMcl_ -> get_init_yaw_cov();
-    distance_noise_ratio_ = pMcl_ -> get_init_distance_noise_ratio();
-    rotation_noise_ratio_ = pMcl_ -> get_init_rotation_noise_ratio();
+    set_parameter(param);
+}
+
+void ParticleFilter::set_parameter(Parameter param)
+{
+    param_ = param;
 }
 
 // 初期化処理
 void ParticleFilter::initialize()
 {
-    double w = 1.0/(double)num_;
+    double w = 1.0/(double)param_.num_;
 
-    for(int i=0; i<num_; i++){
-        double x = set_noise(init_x_,x_cov_);
-        double y = set_noise(init_y_,y_cov_);
-        double yaw = set_noise(init_yaw_,yaw_cov_);
+    for(int i=0; i<param_.num_; i++){
+        double x = set_noise(param_.init_x_,param_.x_cov_);
+        double y = set_noise(param_.init_y_,param_.y_cov_);
+        double yaw = set_noise(param_.init_yaw_,param_.yaw_cov_);
         Particle p(x, y, yaw, w);
         particles_.push_back(p);
     }
@@ -74,9 +71,9 @@ void ParticleFilter::motion_update(nav_msgs::Odometry last, nav_msgs::Odometry p
 // パーティクルの移動
 void ParticleFilter::move(Particle& p, double distance, double direction, double rotation)
 {
-    distance = set_noise(distance, distance_noise_ratio_);
-    direction = set_noise(direction, rotation_noise_ratio_);
-    rotation = set_noise(rotation, rotation_noise_ratio_);
+    distance = set_noise(distance, param_.distance_noise_ratio_);
+    direction = set_noise(direction, param_.rotation_noise_ratio_);
+    rotation = set_noise(rotation, param_.rotation_noise_ratio_);
 
     double new_x = p.get_pose_x() + distance * cos( optimize_angle(direction + p.get_pose_yaw()) );
     double new_y = p.get_pose_y() + distance * sin( optimize_angle(direction + p.get_pose_yaw()) );
@@ -128,19 +125,19 @@ void ParticleFilter::resampling()
 {
     std::vector<Particle> new_particles;
 
-    std::uniform_int_distribution<> int_dist(0,num_-1);
+    std::uniform_int_distribution<> int_dist(0,param_.num_-1);
     std::uniform_real_distribution<> double_dist(0.0,get_max_weight()*2.0);
 
     int index = int_dist(engine);
     double beta = 0.0;
 
-    for(int i=0; i<num_; i++)
+    for(int i=0; i<param_.num_; i++)
     {
         beta += double_dist(engine);
         while(beta > particles_[index].get_weight())
         {
             beta -= particles_[index].get_weight();
-            index = (index+1) % num_;
+            index = (index+1) % param_.num_;
         }
         new_particles.push_back(particles_[index]);
     }
@@ -176,15 +173,15 @@ Localizer::Localizer():private_nh_("~")
 {
     // パラメータの取得
     private_nh_.getParam("hz",hz_);
-    private_nh_.getParam("init_num",init_num_);
-    private_nh_.getParam("init_x",init_x_);
-    private_nh_.getParam("init_y",init_y_);
-    private_nh_.getParam("init_yaw",init_yaw_);
-    private_nh_.getParam("init_x_cov",init_x_cov_);
-    private_nh_.getParam("init_y_cov",init_y_cov_);
-    private_nh_.getParam("init_yaw_cov",init_yaw_cov_);
-    private_nh_.getParam("init_distance_noise_ratio",init_distance_noise_ratio_);
-    private_nh_.getParam("init_rotation_noise_ratio",init_rotation_noise_ratio_);
+    private_nh_.getParam("init_num",init_param_.num_);
+    private_nh_.getParam("init_x",init_param_.init_x_);
+    private_nh_.getParam("init_y",init_param_.init_y_);
+    private_nh_.getParam("init_yaw",init_param_.init_yaw_);
+    private_nh_.getParam("init_x_cov",init_param_.x_cov_);
+    private_nh_.getParam("init_y_cov",init_param_.y_cov_);
+    private_nh_.getParam("init_yaw_cov",init_param_.yaw_cov_);
+    private_nh_.getParam("init_distance_noise_ratio",init_param_.distance_noise_ratio_);
+    private_nh_.getParam("init_rotation_noise_ratio",init_param_.rotation_noise_ratio_);
 
     // Subscriber
     sub_laser_ = nh_.subscribe("/scan", 10, &Localizer::laser_callback, this);
@@ -194,10 +191,17 @@ Localizer::Localizer():private_nh_("~")
     // Publisher
     pub_estimated_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/estimated_pose", 1);
     pub_particle_cloud_ = nh_.advertise<geometry_msgs::PoseArray>("/particle_cloud", 1);
+
+    pf_ = new ParticleFilter(init_param_);
+}
+
+Localizer::~Localizer()
+{
+    delete pf_;
 }
 
 // 各種コールバック関数
-void Localizer::odometry_callback(const nav_msgs::Odometry::ConstPtr &msg)
+void Localizer::odometry_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
     if(!get_odometry_)
     {
@@ -212,12 +216,12 @@ void Localizer::odometry_callback(const nav_msgs::Odometry::ConstPtr &msg)
     last_odometry_ = *msg;
 }
 
-void Localizer::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+void Localizer::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
     map_ = *msg;
 }
 
-void Localizer::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
+void Localizer::laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
     laser_ = *msg;
 }
