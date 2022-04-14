@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="global_map_inflater_settings" default="$(find gpp_tester)/map/map3.yaml"/>
+        <node pkg="gpp_tester" type="global_map_inflater" name="global_map_inflater" >
+            <rosparam command="load" file="$(arg global_map_inflater_settings)"/>
+        </node>
+</launch>

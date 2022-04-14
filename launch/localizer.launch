@@ -1,5 +1,11 @@
 <?xml version="1.0"?>
 
 <launch>
+    <!-- yaml file path-->
+    <arg name="localizer_settings" default="$(find chibi22_b)/config/param/localizer.yaml"/>
 
+    <!-- node launch-->
+    <node pkg="chibi22_b" type="localizer" name="localizer" >
+        <rosparam command="load" file="$(arg localizer_settings)"/>
+    </node>
 </launch>
