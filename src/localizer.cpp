@@ -195,6 +195,7 @@ Localizer::Localizer():private_nh_("~")
     pf_ = new ParticleFilter(init_param_);
 }
 
+// デストラクタ
 Localizer::~Localizer()
 {
     delete pf_;
