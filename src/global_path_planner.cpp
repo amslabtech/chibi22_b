@@ -1,4 +1,4 @@
-#include "global_path_planner.h"
+#include "global_path_planner/global_path_planner.h"
 
 //Todo
 //角度の情報
@@ -78,7 +78,7 @@ void AStar::set_waypoint()
         {1950,2520},
         {2595,2520},
         {2595,2820},
-        {1950,2820},
+        {1950,2810},
         // {1930,2670},
         {1950,2520},
     };
