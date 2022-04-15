@@ -35,6 +35,8 @@ class AStar{
         void make_path();                                               //ウェイポイント間のパスをつなぐ
         int  is_close(int num);                                         //Closeリストに入っているか
         int  is_open(int num);                                          //Openリストに入っているか
+        bool is_contact(int);
+        bool is_low_cost(int);
         void set_pNode();                                               //親ノード探索
         void set_kNode();                                               //子ノード探索
         void update_cost();                                             //コスト更新、親ノード記録
@@ -48,6 +50,10 @@ class AStar{
         double wall_cost;                                               //障害物のコスト設定
         double map_origin_x;
         double map_origin_y;
+        double dist_wp;
+        double pre_dist_wp;
+        int    current_delta;
+        int    pre_delta;
         Node   init_Node = {0, 0, 0, 0};                                //初期化ノード
         Node   origin;                                                  //start位置
         std::vector<std::vector<Node>> node_map;                        //ノードの情報を保存したマップ
