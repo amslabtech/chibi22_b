@@ -14,10 +14,10 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
     obstacle_poses_.header.frame_id = "base_link";
     local_map_.header.frame_id = "base_link";
     local_map_.info.resolution = map_reso_;
-    local_map_.info.width = map_size_ / map_reso_;
-    local_map_.info.height = map_size_ / map_reso_;
-    local_map_.info.origin.position.x = 0;
-    local_map_.info.origin.position.y = 0;
+    local_map_.info.width = map_size_ * map_reso_;
+    local_map_.info.height = map_size_ * map_reso_;
+    local_map_.info.origin.position.x = - (map_size_ * map_reso_) / 2;
+    local_map_.info.origin.position.y = - (map_size_ * map_reso_) / 2;
     local_map_.data.reserve(local_map_.info.width * local_map_.info.height);
     init_map();
 }
@@ -37,22 +37,40 @@ void LocalMapCreator::init_map()
     }
 }
 
-int LocalMapCreator::xy_to_map_index(double x, double y)
+int LocalMapCreator::calc_distance(double angle)
 {
-    double index_x = (x - local_map_.info.origin.position.x) / local_map_.info.resolution;
-    double index_y = (y - local_map_.info.origin.position.y) / local_map_.info.resolution;
-
-    return int(index_x + index_y);
+    double x = 0;
+    double y = 0;
+    if(angle < 0) {
+        x = local_map_.info.origin.position.x;
+        y = - x * std::tan(angle);
+    } else if((angle >= 0) && (angle < M_PI / 4)) {
+        x = local_map_.info.origin.position.x;
+        y = x * std::tan(angle);
+    } else if((angle >= M_PI / 4) && (angle < M_PI / 2)) {
+        y = - local_map_.info.origin.position.y;
+        x = y / std::tan(angle);
+    } else if((angle >= M_PI / 2) && (angle < 3 * M_PI / 4)) {
+        y = - local_map_.info.origin.position.y;
+        x = - y / std::tan(angle);
+    } else if((angle >= 3 * M_PI / 4) && (angle < M_PI)) {
+        x = - local_map_.info.origin.position.x;
+        y = - x * std::tan(angle);
+    } else if((angle >= M_PI) && (angle <= 5 * M_PI / 4)) {
+        x = - local_map_.info.origin.position.x;
+        y = x * std::tan(angle);
+    }
+    return hypot(x, y);
 }
 
 bool LocalMapCreator::is_map_range_checker(double x, double y)
 {
-    double x_start = local_map_.info.origin.position.x;
-    double y_start = local_map_.info.origin.position.y;
-    double x_end = x_start + local_map_.info.width * local_map_.info.resolution;
-    double y_end = y_start + local_map_.info.height * local_map_.info.resolution;
+    double x_min = local_map_.info.origin.position.x;
+    double y_min = local_map_.info.origin.position.y;
+    double x_max = x_min + local_map_.info.width * local_map_.info.resolution;
+    double y_max = y_min + local_map_.info.height * local_map_.info.resolution;
 
-    if((x_start < x) && (x_end > x) && (y_start < y) && (y_end > y)) {
+    if((x_min < x) && (x_max > x) && (y_min < y) && (y_max > y)) {
         return true;
     } else {
         return false;
@@ -61,13 +79,13 @@ bool LocalMapCreator::is_map_range_checker(double x, double y)
 
 bool LocalMapCreator::is_ignore_angle_checker(double angle)
 {
-    if(angle < 1/16 * M_PI) {
+    if(angle < - 3/16 * M_PI) {
         return false;
-    } else if((angle > 7/16 * M_PI) && (angle < 9/16 * M_PI )) {
+    } else if((angle > 3/16 * M_PI) && (angle < 5/16 * M_PI )) {
         return false;
-    } else if((angle > 15/16 * M_PI) && (angle < 17/16 * M_PI)) {
+    } else if((angle > 11/16 * M_PI) && (angle < 13/16 * M_PI)) {
         return false;
-    } else if(angle > 23/16 * M_PI) {
+    } else if(angle > 19/16 * M_PI) {
         return false;
     } else {
         return true;
@@ -76,34 +94,29 @@ bool LocalMapCreator::is_ignore_angle_checker(double angle)
 
 void LocalMapCreator::create_line(double angle, double laser_range)
 {
-    // if(laser_range <= roomba_radius_) {
-            // laser_range = map_size_;
-    // }
-
     double x_now = 0;
     double y_now = 0;
-    int map_index = 0;
 
-    for(double dist_from_start = 0; dist_from_start < map_size_; dist_from_start += map_reso_) {
-        x_now = dist_from_start * std::cos(angle);
-        y_now = dist_from_start * std::sin(angle);
-        map_index = xy_to_map_index(x_now, y_now);
+    for(int distance = 0; distance < calc_distance(angle); distance++) {
+        x_now = distance * std::cos(angle);
+        y_now = distance * std::sin(angle);
 
         if(!is_map_range_checker(x_now, y_now)) {
             return;
         }
+
         if(is_ignore_angle_checker(angle)) {
-            if(dist_from_start >= laser_range) {
-                local_map_.data[map_index] = 100;
+            if(distance >= laser_range) {
+                local_map_.data[distance] = 100;
                 geometry_msgs::Pose obstacle_pose_;
                 obstacle_pose_.position.x = x_now;
                 obstacle_pose_.position.y = y_now;
                 obstacle_poses_.poses.push_back(obstacle_pose_);
             } else {
-                local_map_.data[map_index] = 0;
+                local_map_.data[distance] = 0;
             }
         } else {
-            local_map_.data[map_index] = 0;
+            local_map_.data[distance] = 0;
         }
     }
 }
@@ -111,11 +124,12 @@ void LocalMapCreator::create_line(double angle, double laser_range)
 void LocalMapCreator::create_local_map()
 {
     obstacle_poses_.poses.clear();
-    int scan_size = (laser_.angle_max - laser_.angle_min) / laser_.angle_increment;
+    int laser_size = laser_.angle_max - laser_.angle_min;
+    int scan_size = laser_size / laser_.angle_increment;
     double angle = 0;
 
     for(int i=0; i<scan_size; i++) {
-        angle = i * laser_.angle_increment + laser_.angle_min;
+        angle = (i * laser_.angle_increment + laser_.angle_min) - (laser_size / 6);
         create_line(angle, laser_.ranges[i]);
     }
 }
