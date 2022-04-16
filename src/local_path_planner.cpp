@@ -8,7 +8,7 @@ speed         : 速度の総称(vel, yawrate)
 #include "local_path_planner/local_path_planner.h"
 
 // コンストラクタ
-LocalPathPlanner::LocalPathPlanner():private_nh_("~")
+DWA::DWA():private_nh_("~")
 {
     // パラメータの取得
     private_nh_.getParam("is_visible", is_visible_);
@@ -30,8 +30,8 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~")
     private_nh_.getParam("weight_vel", weight_vel_);
 
     // Subscriber
-    sub_local_goal_ = nh_.subscribe("/local_goal", 1, &LocalPathPlanner::local_goal_callback, this);
-    sub_ob_poses_   = nh_.subscribe("/local_map/obstacle", 1, &LocalPathPlanner::ob_poses_callback, this);
+    sub_local_goal_ = nh_.subscribe("/local_goal", 1, &DWA::local_goal_callback, this);
+    sub_ob_poses_   = nh_.subscribe("/local_map/obstacle", 1, &DWA::ob_poses_callback, this);
 
     // Publisher
     pub_cmd_speed_    = nh_.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control", 1);
@@ -40,7 +40,7 @@ LocalPathPlanner::LocalPathPlanner():private_nh_("~")
 }
 
 // local_goalのコールバック関数
-void LocalPathPlanner::local_goal_callback(const geometry_msgs::PointStamped::ConstPtr& msg)
+void DWA::local_goal_callback(const geometry_msgs::PointStamped::ConstPtr& msg)
 {
     geometry_msgs::TransformStamped transform;
     try
@@ -58,14 +58,14 @@ void LocalPathPlanner::local_goal_callback(const geometry_msgs::PointStamped::Co
 }
 
 // ob_posesのコールバック関数
-void LocalPathPlanner::ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg)
+void DWA::ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
     ob_poses_ = *msg;
     flag_ob_poses_ = true;
 }
 
 // 唯一main文で実行する関数
-void LocalPathPlanner::process()
+void DWA::process()
 {
     ros::Rate loop_rate(hz_); // 制御周波数の設定
     tf2_ros::TransformListener tf_listener(tf_buffer_);
@@ -88,7 +88,7 @@ void LocalPathPlanner::process()
 }
 
 // ゴールに着くまでTrueを返す
-bool LocalPathPlanner::can_move()
+bool DWA::can_move()
 {
     if(!(flag_local_goal_ && flag_ob_poses_)) return false; // msg受信済みか
 
@@ -103,7 +103,7 @@ bool LocalPathPlanner::can_move()
 }
 
 // Roombaの制御入力を行う
-void LocalPathPlanner::roomba_control(const double velocity, const double yawrate)
+void DWA::roomba_control(const double velocity, const double yawrate)
 {
     cmd_speed_.mode           = 11; // 任意の動作を実行するモード
     cmd_speed_.cntl.linear.x  = velocity;
@@ -113,7 +113,7 @@ void LocalPathPlanner::roomba_control(const double velocity, const double yawrat
 }
 
 // 最適な制御入力を計算
-std::vector<double> LocalPathPlanner::calc_final_input()
+std::vector<double> DWA::calc_final_input()
 {
     std::vector<double> input{0.0, 0.0};          // {velocity, yawrate}
     std::vector<std::vector<State>> trajectories; // すべての軌跡格納用
@@ -166,7 +166,7 @@ std::vector<double> LocalPathPlanner::calc_final_input()
 }
 
 // Dynamic Windowを計算
-void LocalPathPlanner::calc_dynamic_window()
+void DWA::calc_dynamic_window()
 {
     // 車両モデルによるWindow
     double Vs[] = {min_vel_, max_vel_, -max_yawrate_, max_yawrate_};
@@ -185,7 +185,7 @@ void LocalPathPlanner::calc_dynamic_window()
 }
 
 // 予測軌跡を作成
-std::vector<State> LocalPathPlanner::calc_traj(const double velocity, const double yawrate)
+std::vector<State> DWA::calc_traj(const double velocity, const double yawrate)
 {
     std::vector<State> trajectory;           // 軌跡格納用の動的配列
     State state = {0.0, 0.0, 0.0, 0.0, 0.0}; // 軌跡作成用の仮想ロボット
@@ -201,7 +201,7 @@ std::vector<State> LocalPathPlanner::calc_traj(const double velocity, const doub
 }
 
 // 予測軌跡作成時における仮想ロボットを移動
-void LocalPathPlanner::move(State& state, const double velocity, const double yawrate)
+void DWA::move(State& state, const double velocity, const double yawrate)
 {
     state.yaw      += yawrate * dt_;
     state.yaw       = optimize_angle(state.yaw);
@@ -212,7 +212,7 @@ void LocalPathPlanner::move(State& state, const double velocity, const double ya
 }
 
 // 適切な角度(-M_PI ~ M_PI)を返す
-double LocalPathPlanner::optimize_angle(double angle)
+double DWA::optimize_angle(double angle)
 {
     if(M_PI  < angle) angle -= 2.0*M_PI;
     if(angle < -M_PI) angle += 2.0*M_PI;
@@ -221,7 +221,7 @@ double LocalPathPlanner::optimize_angle(double angle)
 }
 
 // 評価関数を計算
-double LocalPathPlanner::calc_evaluation(const std::vector<State>& traj)
+double DWA::calc_evaluation(const std::vector<State>& traj)
 {
     const double heading_score  = weight_heading_ * calc_heading_eval(traj);
     const double distance_score = weight_dist_    * calc_dist_eval(traj);
@@ -233,7 +233,7 @@ double LocalPathPlanner::calc_evaluation(const std::vector<State>& traj)
 }
 
 // headingの評価関数を計算
-double LocalPathPlanner::calc_heading_eval(const std::vector<State>& traj)
+double DWA::calc_heading_eval(const std::vector<State>& traj)
 {
     // 最終時刻のロボットの方位
     const double theta = traj.back().yaw;
@@ -255,7 +255,7 @@ double LocalPathPlanner::calc_heading_eval(const std::vector<State>& traj)
 }
 
 // distの評価関数を計算
-double LocalPathPlanner::calc_dist_eval(const std::vector<State>& traj)
+double DWA::calc_dist_eval(const std::vector<State>& traj)
 {
     double min_dist = search_range_; // 最も近い障害物との距離
 
@@ -283,7 +283,7 @@ double LocalPathPlanner::calc_dist_eval(const std::vector<State>& traj)
 }
 
 // velocityの評価関数を計算
-double LocalPathPlanner::calc_vel_eval(const std::vector<State>& traj)
+double DWA::calc_vel_eval(const std::vector<State>& traj)
 {
     if(0.0 < traj.back().velocity) // 前進
         return traj.back().velocity/max_vel_; // 正規化
@@ -292,7 +292,7 @@ double LocalPathPlanner::calc_vel_eval(const std::vector<State>& traj)
 }
 
 // 軌跡を可視化
-void LocalPathPlanner::visualize_traj(const std::vector<State>& traj, const ros::Publisher& pub_local_path, ros::Time now)
+void DWA::visualize_traj(const std::vector<State>& traj, const ros::Publisher& pub_local_path, ros::Time now)
 {
     nav_msgs::Path local_path;
     local_path.header.stamp = now;

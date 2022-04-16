@@ -40,10 +40,10 @@ struct DynamicWindow
 
 
 // ===== クラス =====
-class LocalPathPlanner
+class DWA
 {
 public:
-    LocalPathPlanner(); // デフォルトコンストラクタ
+    DWA(); // デフォルトコンストラクタ
     void process();
 
 private:
