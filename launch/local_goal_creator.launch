@@ -1,9 +1,0 @@
-<?xml version = "1.0"?>
-<launch>
-    <node pkg = "chibi22_b" name = "local_goal_creator" type= "local_goal_creator"/>
-        <param name = "hz_" type = "int" value = "10"/>
-        <param name = "goal_index_" type = "int" value = "50"/>
-        <param name = "local_goal_dist_" type = "double" value = "2"/>
-    </node>
-    <node pkg = "roomba_500driver_meiji" name = "roomba_500driver_meiji" type = "main500"/>
-</launch>
