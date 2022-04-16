@@ -11,7 +11,8 @@ AStar::AStar():private_nh("~")
     private_nh.param("is_reached", is_reached, {false});
     private_nh.param("wall_cost", wall_cost, {1e6});
 
-    sub_map = nh.subscribe("/new_map", 10, &AStar::map_callback, this);                      //mapデータの受信
+    // sub_map = nh.subscribe("/new_map", 10, &AStar::map_callback, this);                      //mapデータの受信
+    sub_map = nh.subscribe("/map", 10, &AStar::map_callback, this);                      //mapデータの受信
     pub_path = nh.advertise<nav_msgs::Path>("/global_path", 1);                          //出力するパス
     pub_wp_path = nh.advertise<nav_msgs::Path>("/wp_path", 1);                           //1辺
     pub_wp = nh.advertise<geometry_msgs::PointStamped>("/open_set_rviz", 1);             //rviz用
