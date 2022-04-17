@@ -302,7 +302,7 @@ void Localizer::process()
         {
             motion_update(last_odometry_, prev_odometry_);
         }
-        //measurement_update();
+        measurement_update();
 
         publish_particles();
 
