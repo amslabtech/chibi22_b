@@ -5,7 +5,7 @@
     <arg name="localizer_settings" default="$(find chibi22_b)/config/param/localizer.yaml"/>
 
     <!-- node launch-->
-    <node pkg="chibi22_b" type="localizer" name="localizer" >
+    <node pkg="chibi22_b" type="localizer" name="localizer" output="screen">
         <rosparam command="load" file="$(arg localizer_settings)"/>
     </node>
 </launch>
