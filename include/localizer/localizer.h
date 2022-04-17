@@ -67,7 +67,7 @@ private:
 
 
     double get_max_weight();                // particles_ が持つ最大の重みを取得
-    void normalize_weight();                // 重みの正規化
+    bool normalize_weight();                // 重みの正規化
     void reset_weight();                    // 重みを 1/N にする(リサンプリング時の処理)
 
     int hz_; // ループ周波数
@@ -84,7 +84,9 @@ private:
     double laser_noise_ratio_ = 0.0;
 
     bool init_request_ = true;  // 初期化実行用フラグ
-    bool get_odometry_ = false; // odometry を取得したか
+    bool odometry_got_ = false; // odometry を取得したか
+    bool map_got_ = false;
+    bool laser_got_ = false;
 
     std::vector<Particle> particles_; // N 個の Particle を格納するベクタ
 

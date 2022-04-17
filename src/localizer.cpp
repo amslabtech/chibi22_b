@@ -59,10 +59,10 @@ Localizer::Localizer():private_nh_("~")
 // 各種コールバック関数
 void Localizer::odometry_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
-    if(!get_odometry_)
+    if(!odometry_got_)
     {
         prev_odometry_ = *msg;
-        get_odometry_ = true;
+        odometry_got_ = true;
     }
     else
     {
@@ -75,11 +75,13 @@ void Localizer::odometry_callback(const nav_msgs::Odometry::ConstPtr& msg)
 void Localizer::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
     map_ = *msg;
+    map_got_ = true;
 }
 
 void Localizer::laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
     laser_ = *msg;
+    laser_got_ = true;
 }
 
 // 初期化処理
@@ -153,9 +155,10 @@ void Localizer::measurement_update()
         p.set_weight(new_weight);
     }
 
-    normalize_weight();
-
-    resampling();
+    if(normalize_weight())
+        resampling();
+    else
+        reset_weight();
 }
 
 double Localizer::calc_weight(Particle& p)
@@ -168,6 +171,8 @@ double Localizer::calc_weight(Particle& p)
 
     for(int index=0; index < limit; index++)
     {
+        if(laser_.ranges[index] <= 0.20)    continue;
+
         double sigma = laser_.ranges[index] * laser_noise_ratio_;
 
         double laser_dist = set_noise(laser_.ranges[index], sigma);
@@ -183,7 +188,7 @@ double Localizer::calc_weight(Particle& p)
 
 double Localizer::likelihood(double x, double mu, double sigma)
 {
-    double ans = exp( - std::pow(x - mu, 2) / 2 * std::pow(sigma, 2) ) / sqrt( 2 * M_PI * std::pow(sigma, 2) );
+    double ans = exp( - std::pow(x - mu, 2) / 2.0 * std::pow(sigma, 2) ) / sqrt( 2.0 * M_PI * std::pow(sigma, 2) );
 
     return ans;
 }
@@ -191,20 +196,19 @@ double Localizer::likelihood(double x, double mu, double sigma)
 double Localizer::dist_on_map(double map_x, double map_y, const double laser_dist, const double laser_angle)
 {
     double distance = 0.0;
+
     double search_step = map_.info.resolution;
     double search_limit = std::min(laser_dist,(double)laser_.range_max);
 
     for(distance; distance <= search_limit; distance += search_step)
     {
-        map_x += distance * cos(laser_angle);
-        map_y += distance * sin(laser_angle);
+        double x = map_x + distance * cos(laser_angle);
+        double y = map_y + distance * sin(laser_angle);
 
-        int map_occupancy = get_map_occupancy(map_x, map_y);
+        int map_occupancy = get_map_occupancy(x, y);
 
-        if(map_occupancy == 100)
-            return distance;
-        if(map_occupancy == -1)
-            return search_limit * 2.0;
+        if(map_occupancy == 100)    return distance;
+        if(map_occupancy == -1)     return search_limit * 5;
     }
     return search_limit;
 }
@@ -225,17 +229,22 @@ int Localizer::get_map_occupancy(double x, double y)
 }
 
 // 重みの正規化
-void Localizer::normalize_weight()
+bool Localizer::normalize_weight()
 {
     double sum = 0.0;
     for(const auto &p : particles_)
         sum += p.get_weight();
+
+    if(sum < 1e-10)     return false;
 
     for(auto &p : particles_)
     {
         double new_weight = p.get_weight() / sum;
         p.set_weight(new_weight);
     }
+
+    return true;
+
 }
 
 // リサンプリング
@@ -258,8 +267,6 @@ void Localizer::resampling()
             index = (index+1) % num_;
         }
         new_particles.push_back(particles_[index]);
-
-        //ROS_INFO_STREAM("chosen : "<<"x="<<particles_[index].get_pose_x()<<"y="<<particles_[index].get_pose_y()<<"yaw="<<particles_[index].get_pose_yaw()<<"weight="<<particles_[index].get_weight());
     }
 
     particles_ = new_particles;
@@ -273,8 +280,7 @@ double Localizer::get_max_weight()
 
     for(const auto &p : particles_)
     {
-        if(max <= p.get_weight())
-            max = p.get_weight();
+        if(max <= p.get_weight())   max = p.get_weight();
     }
 
     return max;
@@ -293,21 +299,23 @@ void Localizer::process()
 
     while(ros::ok())
     {
-        if(init_request_)
+        if(map_got_ && odometry_got_ && laser_got_)
         {
-            initialize();
-            init_request_ = false;
-        }
-        if(get_odometry_)
-        {
+            if(init_request_)
+            {
+                initialize();
+                init_request_ = false;
+            }
             motion_update(last_odometry_, prev_odometry_);
-        }
-        measurement_update();
+            measurement_update();
 
-        publish_particles();
+            publish_particles();
+
+        }
 
         ros::spinOnce();
         loop_rate.sleep();
+
     }
 }
 
@@ -317,7 +325,7 @@ void Localizer::publish_particles()
     particle_cloud_msg_.header.frame_id = "map"; // パブリッシュするフレームの設定
     particle_cloud_msg_.poses.resize(particles_.size()); // パブリッシュする PoseArray 配列のサイズを particles_ のサイズに合わせる
 
-    for(int i=0; i< (particles_.size()); i++)
+    for(int i=0; i < particles_.size(); i++)
     {
         particle_cloud_msg_.poses[i].position.x = particles_[i].get_pose_x();
         particle_cloud_msg_.poses[i].position.y = particles_[i].get_pose_y();
