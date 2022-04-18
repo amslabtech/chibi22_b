@@ -11,8 +11,8 @@
 struct Node{
     double x;
     double y;
-    int g;
-    int f;
+    double g;
+    double f;
 };
 
 class AStar{
@@ -113,5 +113,6 @@ class AStar{
         nav_msgs::Path wp_path;                 //ウェイポイント間のパス
         nav_msgs::Path global_path;             //出力する経路
         geometry_msgs::PoseStamped way_point;   //ウェイポイントの情報
+        geometry_msgs::PoseStamped path_point;
 };
 #endif
