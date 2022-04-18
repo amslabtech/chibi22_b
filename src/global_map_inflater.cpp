@@ -36,16 +36,16 @@ void Global_Map_Inflater::map2array()                                           
     }
 
     row_ = origin_map.info.height;
-    column = origin_map.info.width;
+    column_ = origin_map.info.width;
 
     std::cout<<"row_"<<row_<<std::endl;
-    std::cout<<"column"<<column<<std::endl;
+    std::cout<<"column_"<<column_<<std::endl;
 
     int count = 0;
 
     for(int i = 0;i < row_; i++)
     {
-        for(int j = 0;j < column;j++)
+        for(int j = 0;j < column_;j++)
         {
             grid_map[i][j] = origin_map.data[count];
             copy_grid_map[i][j] = origin_map.data[count];
@@ -60,7 +60,7 @@ void Global_Map_Inflater::obstacle_expand()                                     
 
     for(int i=0;i<row_;i++)
     {
-        for(int j=3;j<column-3;j++)
+        for(int j=3;j<column_-3;j++)
         {
             if(copy_grid_map[i][j] == 100)
             {
@@ -85,7 +85,7 @@ void Global_Map_Inflater::remap()                                               
 
     for(int i = 0;i<row_;i++)
     {
-        for(int j = 0;j<column;j++)
+        for(int j = 0;j<column_;j++)
         {
             new_map.data.push_back(grid_map[i][j]);
         }
@@ -104,8 +104,8 @@ void Global_Map_Inflater::remap()                                               
 
 void Global_Map_Inflater::process()                                             //プロセス関数
 {
-    grid_map = std::vector<std::vector<int>>(row_, std::vector<int>(column,0)); //配列の初期化
-    copy_grid_map = std::vector<std::vector<int>>(row_, std::vector<int>(column,0));
+    grid_map = std::vector<std::vector<int>>(row_, std::vector<int>(column_,0)); //配列の初期化
+    copy_grid_map = std::vector<std::vector<int>>(row_, std::vector<int>(column_,0));
     std::cout<<"process starts"<<std::endl;
     ros::Rate loop_rate(hz);
     while(ros::ok())
