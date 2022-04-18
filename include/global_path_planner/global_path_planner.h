@@ -106,11 +106,8 @@ class AStar{
         ros::NodeHandle nh;
         ros::NodeHandle private_nh;
         ros::Subscriber sub_map;
-        ros::Subscriber sub_map_test;
         ros::Publisher pub_path;
-        ros::Publisher pub_wp;
         ros::Publisher pub_wp_path;
-        ros::Publisher pub_wall;
 
         nav_msgs::OccupancyGrid map;
         nav_msgs::OccupancyGrid map_data;       //map格納

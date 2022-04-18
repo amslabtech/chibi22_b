@@ -15,8 +15,6 @@ AStar::AStar():private_nh("~")
     sub_map = nh.subscribe("map", 10, &AStar::map_callback, this);                      //mapデータの受信
     pub_path = nh.advertise<nav_msgs::Path>("global_path", 1);                          //出力するパス
     pub_wp_path = nh.advertise<nav_msgs::Path>("wp_path", 1);                           //1辺
-    pub_wp = nh.advertise<geometry_msgs::PointStamped>("open_set_rviz", 1);             //rviz用
-    pub_wall = nh.advertise<nav_msgs::OccupancyGrid>("wall_map", 1);
 }
 
 
@@ -36,8 +34,8 @@ void AStar::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
         row = map_data.info.height;                                                     //マップの大きさを保存
         col = map_data.info.width;
         resolution = map_data.info.resolution;
+
         map_grid = std::vector<std::vector<int>>(row, std::vector<int>(col,0));         //map_gridの初期化
-        occu_map_grid = std::vector<std::vector<int>>(row, std::vector<int>(col,0));
 
         //マップデータを変換
         for(int i=0;i<row;i++)
@@ -90,7 +88,6 @@ void AStar::set_NodeList(std::vector<Node> &list)
     {
         list.pop_back();
     }
-    std::cout << "set node list(size:" << list.size() << std::endl;
 }
 
 void AStar::show_NodeList(std::vector<Node> list)
@@ -116,7 +113,6 @@ void AStar::make_heuristic(int Phase){
 }
 
 bool AStar::is_low_cost(int i){
-    // std::cout << "test f:" << open_list[i].f << ", " << min_f << std::endl;
     if(open_list[i].f < min_f && open_list[i].f >= 0)
         return true;
     else
@@ -124,12 +120,12 @@ bool AStar::is_low_cost(int i){
 }
 
 bool AStar::is_contact(int i){
-        if(fabs(open_list[i].x-pre_p_Node.x) == 0 && fabs(open_list[i].y-pre_p_Node.y) <= 1)
-            return true;
-        if(fabs(open_list[i].x-pre_p_Node.x) <= 1 && fabs(open_list[i].y-pre_p_Node.y) == 0)
-            return true;
-        else
-            return false;
+    if(fabs(open_list[i].x-pre_p_Node.x) == 0 && fabs(open_list[i].y-pre_p_Node.y) <= 1)
+        return true;
+    else if(fabs(open_list[i].x-pre_p_Node.x) <= 1 && fabs(open_list[i].y-pre_p_Node.y) == 0)
+        return true;
+    else
+        return false;
 }
 
 //進行方向の記録
@@ -176,23 +172,23 @@ bool AStar::is_neared()
 //親ノードの探索
 void AStar::set_pNode()
 {
-    pre_p_Node = p_Node;                        //直前の親ノードの保存
-    p_Node = init_Node;                         //親ノードの初期化
+    pre_p_Node = p_Node;    //直前の親ノードの保存
+    p_Node = init_Node;     //親ノードの初期化
     p_Node.g = 1;
     p_Node.f = 1e10;
-    min_f = 1e10;                              //各変数の初期化
+    min_f = 1e10;           //各変数の初期化
     dist_wp = 1e20;
     pre_dist_wp = 1e20;
     current_delta = 5;
 
     //最小探索
     int count = 0;
-    for(int i=open_list.size()-1; i>=0; i--)                                                    //すべての子ノードを探索
+    for(int i=open_list.size()-1; i>=0; i--)                                                //すべての子ノードを探索
     {
         dist_wp = std::sqrt(std::pow(open_list[i].x - x_waypoint, 2) + std::pow(open_list[i].y - y_waypoint, 2));
         if(is_low_cost(i) && is_contact(i) && is_neared())
         {
-            if(x_waypoint != pre_p_Node.x && y_waypoint != pre_p_Node.y)                    //斜め移動の処理
+            if(x_waypoint != pre_p_Node.x && y_waypoint != pre_p_Node.y)                    //斜め移動するとき
             {
                 current_delta = set_current_delta(i);                                       //進行方向の記録
                 if(is_contacted_wall())                                                     //壁に接しているとき
@@ -233,20 +229,11 @@ void AStar::set_pNode()
     }
 }
 
-void AStar::init_node_list(std::vector<Node> &list)
-{
-    int list_size = list.size();
-    for(int i=0; i<list_size; i++)
-    {
-        list.pop_back();
-    }
-}
-
 //子ノードの設定
 void AStar::set_kNode()
 {
     //子ノードの初期化
-    init_node_list(k_Node);
+    set_NodeList(k_Node);
     for(int i=0; i<delta.size(); i++)
     {
         k_Node.push_back(init_Node);
