@@ -17,8 +17,10 @@ class LocalMapCreator
         void create_local_map();
         void init_map();
         int calc_distance(double angle);
+        int xy_to_map_index(double x, double y);
         bool is_map_range_checker(double x, double y);
         bool is_ignore_angle_checker(double angle);
+        bool is_range_checker(double laser_range);
 
         int hz_;
         double map_size_;
