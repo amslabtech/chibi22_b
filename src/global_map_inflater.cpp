@@ -107,7 +107,7 @@ void Global_Map_Inflater::process()                                             
     grid_map = std::vector<std::vector<int>>(row_, std::vector<int>(column_,0)); //配列の初期化
     copy_grid_map = std::vector<std::vector<int>>(row_, std::vector<int>(column_,0));
     std::cout<<"process starts"<<std::endl;
-    ros::Rate loop_rate(hz);
+    ros::Rate loop_rate(hz_);
     while(ros::ok())
     {
         ros::spinOnce();
