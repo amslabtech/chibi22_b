@@ -3,7 +3,7 @@ hz: 10
 
 #初期化時の値
 #パーティクル数
-num: 50
+num: 300
 #初めにばらまくパーティクルの位置姿勢
 init_x: 0.0
 init_y: 0.0
@@ -12,6 +12,13 @@ init_yaw: 0.0
 x_cov: 0.50
 y_cov: 0.50
 yaw_cov: 0.50
-distance_noise_ratio: 0.10 #(m/m)
-rotation_noise_ratio: 0.10 #(rad/1rad)
-laser_noise_ratio: 0.040 #(m/m)
+distance_noise_rate: 0.10 #(m/m)
+rotation_noise_rate: 0.10 #(rad/1rad)
+laser_noise_rate: 0.040 #(m/m)
+
+laser_step: 27
+laser_ignore_range: 0.20
+
+alpha_slow_th: 0.05
+alpha_fast_th: 0.1
+expansion_rate: 0.02
