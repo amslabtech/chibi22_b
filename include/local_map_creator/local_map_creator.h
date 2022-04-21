@@ -1,10 +1,11 @@
-#ifndef local_map_cretor_H
-#define local_map_cretor_H
+#ifndef local_map_creator_H
+#define local_map_creator_H
 
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "geometry_msgs/PoseArray.h"
+#include "geometry_msgs/Pose.h"
 
 class LocalMapCreator
 {
@@ -12,7 +13,7 @@ class LocalMapCreator
         LocalMapCreator();
         void process();
     private:
-        void laser_callback(const sensor_msgs::LaserScan::ConstPtr&);
+        void laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg);
         void create_line(double angle, double laser_range);
         void create_local_map();
         void init_map();
@@ -39,6 +40,7 @@ class LocalMapCreator
         sensor_msgs::LaserScan laser_;
         nav_msgs::OccupancyGrid local_map_;
         geometry_msgs::PoseArray obstacle_poses_;
+        geometry_msgs::Pose obstacle_pose_;
 };
 
 #endif
