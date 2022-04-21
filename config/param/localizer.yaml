@@ -19,6 +19,6 @@ laser_noise_rate: 0.040 #(m/m)
 laser_step: 27
 laser_ignore_range: 0.20
 
-alpha_slow_th: 0.05
+alpha_slow_th: 0.001
 alpha_fast_th: 0.1
-expansion_rate: 0.02
+expansion_rate_th: 0.2

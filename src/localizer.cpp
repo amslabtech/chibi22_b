@@ -6,14 +6,14 @@ std::mt19937 engine(seed_gen());
 
 // ==== クラス Particle ====
 // コンストラクタ
-Localizer::Particle::Particle(double x, double y, double yaw, double weight)
+Particle::Particle(double x, double y, double yaw, double weight)
 {
     set_pose(x,y,yaw);
     set_weight(weight);
 }
 
 // pose の設定
-void Localizer::Particle::set_pose(double x, double y, double yaw)
+void Particle::set_pose(double x, double y, double yaw)
 {
     x_ = x;
     y_ = y;
@@ -21,7 +21,7 @@ void Localizer::Particle::set_pose(double x, double y, double yaw)
 }
 
 // 重みの設定
-void Localizer::Particle::set_weight(double weight)
+void Particle::set_weight(double weight)
 {
     weight_ = weight;
 }
@@ -48,7 +48,7 @@ Localizer::Localizer():private_nh_("~")
     private_nh_.getParam("laser_ignore_range", laser_ignore_range_);
     private_nh_.getParam("alpha_slow_th", alpha_slow_th_);
     private_nh_.getParam("alpha_fast_th", alpha_fast_th_);
-    private_nh_.getParam("expansion_rate", expansion_rate_);
+    private_nh_.getParam("expansion_rate_th", expansion_rate_th_);
 
 
     // Subscriber
@@ -302,7 +302,9 @@ bool Localizer::reset_request()
 
     num_replace_ = num_ * std::max( 0.0, 1.0 - alpha_fast_ / alpha_slow_);
 
+
     ROS_INFO_STREAM("fast="<<alpha_fast_<<"slow="<<alpha_slow_<<"num="<<num_replace_);
+
     return num_replace_;
 }
 
@@ -318,11 +320,14 @@ void Localizer::expansion_reset()
     new_particles = particles_;
     sort_particles(new_particles);
 
+    double expansion_rate = expansion_rate_th_ * std::max(0.0, 1.0 - alpha_);
+    ROS_INFO_STREAM("alpha="<<alpha_<<"1.0-alpha="<<1.0-alpha_<<"rate="<<expansion_rate);
+
     for(int i=0; i<num_replace_; i++)
     {
-        double x = set_noise(estimated_pose_.get_pose_x(), expansion_rate_);
-        double y = set_noise(estimated_pose_.get_pose_y(), expansion_rate_);
-        double yaw = set_noise(estimated_pose_.get_pose_yaw(), expansion_rate_);
+        double x = set_noise(estimated_pose_.get_pose_x(), expansion_rate);
+        double y = set_noise(estimated_pose_.get_pose_y(), expansion_rate);
+        double yaw = set_noise(estimated_pose_.get_pose_yaw(), expansion_rate);
         new_particles[i].set_pose(x, y, yaw);
     }
 
@@ -374,9 +379,16 @@ void Localizer::process()
 
             publish_particles();
             publish_estimated_pose();
+            try
+            {
+                broadcast_roomba_state();
+            }
+            catch(tf::TransformException &ex)
+            {
+                ROS_ERROR("%s", ex.what());
+            }
 
         }
-
         ros::spinOnce();
         loop_rate.sleep();
 
@@ -416,6 +428,38 @@ void Localizer::publish_estimated_pose()
     tf2::convert(q, estimated_pose_msg_.pose.orientation);
 
     pub_estimated_pose_.publish(estimated_pose_msg_);
+}
+
+void Localizer::broadcast_roomba_state()
+{
+    tf::TransformBroadcaster roomba_state_broadcaster;
+
+    double map_to_base_x = estimated_pose_.get_pose_x();
+    double map_to_base_y = estimated_pose_.get_pose_y();
+    double map_to_base_yaw = estimated_pose_.get_pose_yaw();
+
+    double odom_to_base_x = last_odometry_.pose.pose.position.x;
+    double odom_to_base_y = last_odometry_.pose.pose.position.y;
+    double odom_to_base_yaw = tf2::getYaw(last_odometry_.pose.pose.orientation);
+
+    double roomba_state_yaw = optimize_angle(map_to_base_yaw - odom_to_base_yaw);
+    double roomba_state_x = map_to_base_x - odom_to_base_x * cos(roomba_state_yaw) + odom_to_base_y * sin(roomba_state_yaw);
+    double roomba_state_y = map_to_base_y - odom_to_base_x * sin(roomba_state_yaw) - odom_to_base_y * cos(roomba_state_yaw);
+    geometry_msgs::Quaternion roomba_state_q;
+    tf::quaternionTFToMsg(tf::createQuaternionFromYaw(roomba_state_yaw), roomba_state_q);
+
+    geometry_msgs::TransformStamped roomba_state;
+    roomba_state.header.stamp = ros::Time::now();
+
+    roomba_state.header.frame_id = "map";
+    roomba_state.child_frame_id = "odom";
+
+    roomba_state.transform.translation.x = roomba_state_x;
+    roomba_state.transform.translation.y = roomba_state_y;
+    roomba_state.transform.translation.z = 0.0;
+    roomba_state.transform.rotation = roomba_state_q;
+
+    roomba_state_broadcaster.sendTransform(roomba_state);
 }
 
 // ==== メイン関数 ====
