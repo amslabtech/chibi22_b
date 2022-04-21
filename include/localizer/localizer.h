@@ -59,7 +59,6 @@ private:
     void measurement_update(); // 観測更新(センサの値と比較して重みを更新)
     bool reset_request();
     void resampling(); // リサンプリング
-    void sort_particles(std::vector<Particle>& p);
     void expansion_reset();
     void estimate_pose();
 
@@ -121,6 +120,8 @@ private:
 
     ros::Publisher pub_estimated_pose_;
     ros::Publisher pub_particle_cloud_;
+
+    tf::TransformBroadcaster roomba_state_broadcaster_;
 
     geometry_msgs::PoseStamped estimated_pose_msg_; // 一意に推定した pose
     geometry_msgs::PoseArray particle_cloud_msg_;   // パーティクルの pose

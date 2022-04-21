@@ -300,25 +300,19 @@ bool Localizer::reset_request()
     alpha_slow_ += alpha_slow_th_ * (alpha_ - alpha_slow_);
     alpha_fast_ += alpha_fast_th_ * (alpha_ - alpha_fast_);
 
-    num_replace_ = num_ * std::max( 0.0, 1.0 - alpha_fast_ / alpha_slow_);
+    num_replace_ = (int)num_ * std::max( 0.0, 1.0 - alpha_fast_ / alpha_slow_);
 
 
-    ROS_INFO_STREAM("fast="<<alpha_fast_<<"slow="<<alpha_slow_<<"num="<<num_replace_);
+    ROS_INFO_STREAM("alpha="<<alpha_<<"fast="<<alpha_fast_<<"slow="<<alpha_slow_<<"num="<<num_replace_);
 
     return num_replace_;
 }
-
-void Localizer::sort_particles(std::vector<Particle>& p)
-{
-    std::sort(p.begin(), p.end());
-}
-
 
 void Localizer::expansion_reset()
 {
     std::vector<Particle> new_particles;
     new_particles = particles_;
-    sort_particles(new_particles);
+    std::sort(new_particles.begin(), new_particles.end());
 
     double expansion_rate = expansion_rate_th_ * std::max(0.0, 1.0 - alpha_);
     ROS_INFO_STREAM("alpha="<<alpha_<<"1.0-alpha="<<1.0-alpha_<<"rate="<<expansion_rate);
@@ -432,8 +426,6 @@ void Localizer::publish_estimated_pose()
 
 void Localizer::broadcast_roomba_state()
 {
-    tf::TransformBroadcaster roomba_state_broadcaster;
-
     double map_to_base_x = estimated_pose_.get_pose_x();
     double map_to_base_y = estimated_pose_.get_pose_y();
     double map_to_base_yaw = estimated_pose_.get_pose_yaw();
@@ -459,7 +451,7 @@ void Localizer::broadcast_roomba_state()
     roomba_state.transform.translation.z = 0.0;
     roomba_state.transform.rotation = roomba_state_q;
 
-    roomba_state_broadcaster.sendTransform(roomba_state);
+    roomba_state_broadcaster_.sendTransform(roomba_state);
 }
 
 // ==== メイン関数 ====

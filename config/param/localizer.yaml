@@ -3,7 +3,7 @@ hz: 10
 
 #初期化時の値
 #パーティクル数
-num: 300
+num: 500
 #初めにばらまくパーティクルの位置姿勢
 init_x: 0.0
 init_y: 0.0
@@ -19,6 +19,6 @@ laser_noise_rate: 0.040 #(m/m)
 laser_step: 27
 laser_ignore_range: 0.20
 
-alpha_slow_th: 0.001
+alpha_slow_th: 0.05
 alpha_fast_th: 0.1
-expansion_rate_th: 0.2
+expansion_rate_th: 0.1
