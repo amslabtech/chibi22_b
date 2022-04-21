@@ -11,8 +11,8 @@
 struct Node{
     double x;
     double y;
-    int g;
-    int f;
+    double g;
+    double f;
 };
 
 class AStar{
@@ -29,17 +29,22 @@ class AStar{
         void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &);   //受け取ったデータをマップに変換
         void make_testMap();                                            //テスト用マップ作成
 
+        void init_node_list(std::vector<Node> &);
         void set_NodeList(std::vector<Node> &);                         //ノードリストの初期化
         void show_NodeList(std::vector<Node>);                          //ノードリスト確認
         void add_path();                                                //ウェイポイント間のパスに追加
         void make_path();                                               //ウェイポイント間のパスをつなぐ
         int  is_close(int num);                                         //Closeリストに入っているか
         int  is_open(int num);                                          //Openリストに入っているか
+        int  set_current_delta(int);
         bool is_contact(int);
         bool is_low_cost(int);
+        bool is_contacted_wall();
+        bool is_neared();
         void set_pNode();                                               //親ノード探索
         void set_kNode();                                               //子ノード探索
         void update_cost();                                             //コスト更新、親ノード記録
+        void update_p_node(int);                                           //親ノード候補の作成
 
         //map作成で使用
         int    hz;
@@ -101,17 +106,14 @@ class AStar{
         ros::NodeHandle nh;
         ros::NodeHandle private_nh;
         ros::Subscriber sub_map;
-        ros::Subscriber sub_map_test;
         ros::Publisher pub_path;
-        ros::Publisher pub_wp;
         ros::Publisher pub_wp_path;
-        ros::Publisher pub_wall;
 
         nav_msgs::OccupancyGrid map;
         nav_msgs::OccupancyGrid map_data;       //map格納
         nav_msgs::OccupancyGrid wall_map;       //障害物確認用
         nav_msgs::Path wp_path;                 //ウェイポイント間のパス
         nav_msgs::Path global_path;             //出力する経路
-        geometry_msgs::PoseStamped way_point;   //ウェイポイントの情報
+        geometry_msgs::PoseStamped path_point;
 };
 #endif

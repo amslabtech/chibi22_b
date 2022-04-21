@@ -6,14 +6,14 @@ std::mt19937 engine(seed_gen());
 
 // ==== クラス Particle ====
 // コンストラクタ
-Localizer::Particle::Particle(double x, double y, double yaw, double weight)
+Particle::Particle(double x, double y, double yaw, double weight)
 {
     set_pose(x,y,yaw);
     set_weight(weight);
 }
 
 // pose の設定
-void Localizer::Particle::set_pose(double x, double y, double yaw)
+void Particle::set_pose(double x, double y, double yaw)
 {
     x_ = x;
     y_ = y;
@@ -21,7 +21,7 @@ void Localizer::Particle::set_pose(double x, double y, double yaw)
 }
 
 // 重みの設定
-void Localizer::Particle::set_weight(double weight)
+void Particle::set_weight(double weight)
 {
     weight_ = weight;
 }
@@ -41,9 +41,15 @@ Localizer::Localizer():private_nh_("~")
     private_nh_.getParam("x_cov",x_cov_);
     private_nh_.getParam("y_cov",y_cov_);
     private_nh_.getParam("yaw_cov",yaw_cov_);
-    private_nh_.getParam("distance_noise_ratio",distance_noise_ratio_);
-    private_nh_.getParam("rotation_noise_ratio",rotation_noise_ratio_);
-    private_nh_.getParam("laser_noise_ratio", laser_noise_ratio_);
+    private_nh_.getParam("distance_noise_rate",distance_noise_rate_);
+    private_nh_.getParam("rotation_noise_rate",rotation_noise_rate_);
+    private_nh_.getParam("laser_noise_rate", laser_noise_rate_);
+    private_nh_.getParam("laser_step", laser_step_);
+    private_nh_.getParam("laser_ignore_range", laser_ignore_range_);
+    private_nh_.getParam("alpha_slow_th", alpha_slow_th_);
+    private_nh_.getParam("alpha_fast_th", alpha_fast_th_);
+    private_nh_.getParam("expansion_rate_th", expansion_rate_th_);
+
 
     // Subscriber
     sub_laser_ = nh_.subscribe("/scan", 10, &Localizer::laser_callback, this);
@@ -51,8 +57,8 @@ Localizer::Localizer():private_nh_("~")
     sub_map_ = nh_.subscribe("/map", 10, &Localizer::map_callback, this);
 
     // Publisher
-    pub_estimated_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/estimated_pose", 1);
-    pub_particle_cloud_ = nh_.advertise<geometry_msgs::PoseArray>("/particle_cloud", 1);
+    pub_estimated_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/estimated_pose_22_b", 1);
+    pub_particle_cloud_ = nh_.advertise<geometry_msgs::PoseArray>("/particle_cloud_22_b", 1);
 
 }
 
@@ -117,9 +123,9 @@ void Localizer::motion_update(const nav_msgs::Odometry last, const nav_msgs::Odo
 // パーティクルの移動
 void Localizer::move(Particle& p, double distance, double direction, double rotation)
 {
-    distance += set_noise(0.0, distance * distance_noise_ratio_);
-    direction += set_noise(0.0, direction * rotation_noise_ratio_);
-    rotation += set_noise(0.0, rotation * rotation_noise_ratio_);
+    distance += set_noise(0.0, distance * distance_noise_rate_);
+    direction += set_noise(0.0, direction * rotation_noise_rate_);
+    rotation += set_noise(0.0, rotation * rotation_noise_rate_);
 
     double new_x = p.get_pose_x() + distance * cos( optimize_angle(direction + p.get_pose_yaw()) );
     double new_y = p.get_pose_y() + distance * sin( optimize_angle(direction + p.get_pose_yaw()) );
@@ -149,16 +155,23 @@ double Localizer::optimize_angle(double angle)
 // 観測更新(センサの値と比較して重みを更新)
 void Localizer::measurement_update()
 {
-    for(auto& p : particles_)
+    for(auto &p : particles_)
     {
         double new_weight = calc_weight(p);
         p.set_weight(new_weight);
     }
+    normalize_weight();
 
-    if(normalize_weight())
-        resampling();
+    if(reset_request())
+    {
+        expansion_reset();
+    }
     else
-        reset_weight();
+    {
+        resampling();
+    }
+    estimate_pose();
+
 }
 
 double Localizer::calc_weight(Particle& p)
@@ -169,18 +182,18 @@ double Localizer::calc_weight(Particle& p)
     double angle_step = laser_.angle_increment;
     int limit = laser_.ranges.size();
 
-    for(int index=0; index < limit; index++)
+    for(int index=0; index < limit; index += laser_step_)
     {
-        if(laser_.ranges[index] <= 0.20)    continue;
+        if(laser_.ranges[index] <= laser_ignore_range_)    continue;
 
-        double sigma = laser_.ranges[index] * laser_noise_ratio_;
+        double sigma = laser_.ranges[index] * laser_noise_rate_;
 
         double laser_dist = set_noise(laser_.ranges[index], sigma);
         double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), laser_dist, angle);
 
         weight += likelihood(map_dist, laser_dist, sigma);
 
-        angle = optimize_angle(angle + angle_step);
+        angle = optimize_angle(angle + angle_step * laser_step_);
     }
 
     return weight;
@@ -188,7 +201,7 @@ double Localizer::calc_weight(Particle& p)
 
 double Localizer::likelihood(double x, double mu, double sigma)
 {
-    double ans = exp( - std::pow(x - mu, 2) / 2.0 * std::pow(sigma, 2) ) / sqrt( 2.0 * M_PI * std::pow(sigma, 2) );
+    double ans = exp( - std::pow(x - mu, 2) / 2.0 * std::pow(sigma, 2) ) / ( sqrt( 2.0 * M_PI ) * sigma ) * 1e-7;
 
     return ans;
 }
@@ -198,7 +211,7 @@ double Localizer::dist_on_map(double map_x, double map_y, const double laser_dis
     double distance = 0.0;
 
     double search_step = map_.info.resolution;
-    double search_limit = std::min(laser_dist,(double)laser_.range_max);
+    double search_limit = std::min(laser_dist, (double)laser_.range_max);
 
     for(distance; distance <= search_limit; distance += search_step)
     {
@@ -208,7 +221,7 @@ double Localizer::dist_on_map(double map_x, double map_y, const double laser_dis
         int map_occupancy = get_map_occupancy(x, y);
 
         if(map_occupancy == 100)    return distance;
-        if(map_occupancy == -1)     return search_limit * 5;
+        if(map_occupancy == -1)     return search_limit * 10.0;
     }
     return search_limit;
 }
@@ -229,21 +242,17 @@ int Localizer::get_map_occupancy(double x, double y)
 }
 
 // 重みの正規化
-bool Localizer::normalize_weight()
+void Localizer::normalize_weight()
 {
-    double sum = 0.0;
+    alpha_ = 0.0;
     for(const auto &p : particles_)
-        sum += p.get_weight();
-
-    if(sum < 1e-10)     return false;
+        alpha_ += p.get_weight();
 
     for(auto &p : particles_)
     {
-        double new_weight = p.get_weight() / sum;
+        double new_weight = p.get_weight() / alpha_;
         p.set_weight(new_weight);
     }
-
-    return true;
 
 }
 
@@ -286,6 +295,65 @@ double Localizer::get_max_weight()
     return max;
 }
 
+bool Localizer::reset_request()
+{
+    alpha_slow_ += alpha_slow_th_ * (alpha_ - alpha_slow_);
+    alpha_fast_ += alpha_fast_th_ * (alpha_ - alpha_fast_);
+
+    num_replace_ = num_ * std::max( 0.0, 1.0 - alpha_fast_ / alpha_slow_);
+
+
+    ROS_INFO_STREAM("fast="<<alpha_fast_<<"slow="<<alpha_slow_<<"num="<<num_replace_);
+
+    return num_replace_;
+}
+
+void Localizer::sort_particles(std::vector<Particle>& p)
+{
+    std::sort(p.begin(), p.end());
+}
+
+
+void Localizer::expansion_reset()
+{
+    std::vector<Particle> new_particles;
+    new_particles = particles_;
+    sort_particles(new_particles);
+
+    double expansion_rate = expansion_rate_th_ * std::max(0.0, 1.0 - alpha_);
+    ROS_INFO_STREAM("alpha="<<alpha_<<"1.0-alpha="<<1.0-alpha_<<"rate="<<expansion_rate);
+
+    for(int i=0; i<num_replace_; i++)
+    {
+        double x = set_noise(estimated_pose_.get_pose_x(), expansion_rate);
+        double y = set_noise(estimated_pose_.get_pose_y(), expansion_rate);
+        double yaw = set_noise(estimated_pose_.get_pose_yaw(), expansion_rate);
+        new_particles[i].set_pose(x, y, yaw);
+    }
+
+    particles_ = new_particles;
+    reset_weight();
+}
+
+void Localizer::estimate_pose()
+{
+    double x = 0.0;
+    double y = 0.0;
+    double yaw = 0.0;
+    double max_weight = get_max_weight();
+
+    for(const auto &p : particles_)
+    {
+        x += p.get_pose_x() * p.get_weight();
+        y += p.get_pose_y() * p.get_weight();
+
+        if(p.get_weight() == max_weight)
+            yaw = p.get_pose_yaw();
+    }
+
+    estimated_pose_.set_pose(x, y, yaw);
+}
+
 // 重みのリセット
 void Localizer::reset_weight()
 {
@@ -310,9 +378,17 @@ void Localizer::process()
             measurement_update();
 
             publish_particles();
+            publish_estimated_pose();
+            try
+            {
+                broadcast_roomba_state();
+            }
+            catch(tf::TransformException &ex)
+            {
+                ROS_ERROR("%s", ex.what());
+            }
 
         }
-
         ros::spinOnce();
         loop_rate.sleep();
 
@@ -332,11 +408,58 @@ void Localizer::publish_particles()
         particle_cloud_msg_.poses[i].position.z = 0.0;
 
         tf2::Quaternion q;
-        q.setRPY(0, 0, particles_[i].get_pose_yaw());
+        q.setRPY(0.0, 0.0, particles_[i].get_pose_yaw());
         tf2::convert(q, particle_cloud_msg_.poses[i].orientation);
     }
 
     pub_particle_cloud_.publish(particle_cloud_msg_);
+}
+
+void Localizer::publish_estimated_pose()
+{
+    estimated_pose_msg_.header.stamp = ros::Time::now();
+    estimated_pose_msg_.header.frame_id = "map";
+
+    estimated_pose_msg_.pose.position.x = estimated_pose_.get_pose_x();
+    estimated_pose_msg_.pose.position.y = estimated_pose_.get_pose_y();
+
+    tf2::Quaternion q;
+    q.setRPY(0.0, 0.0, estimated_pose_.get_pose_yaw());
+    tf2::convert(q, estimated_pose_msg_.pose.orientation);
+
+    pub_estimated_pose_.publish(estimated_pose_msg_);
+}
+
+void Localizer::broadcast_roomba_state()
+{
+    tf::TransformBroadcaster roomba_state_broadcaster;
+
+    double map_to_base_x = estimated_pose_.get_pose_x();
+    double map_to_base_y = estimated_pose_.get_pose_y();
+    double map_to_base_yaw = estimated_pose_.get_pose_yaw();
+
+    double odom_to_base_x = last_odometry_.pose.pose.position.x;
+    double odom_to_base_y = last_odometry_.pose.pose.position.y;
+    double odom_to_base_yaw = tf2::getYaw(last_odometry_.pose.pose.orientation);
+
+    double roomba_state_yaw = optimize_angle(map_to_base_yaw - odom_to_base_yaw);
+    double roomba_state_x = map_to_base_x - odom_to_base_x * cos(roomba_state_yaw) + odom_to_base_y * sin(roomba_state_yaw);
+    double roomba_state_y = map_to_base_y - odom_to_base_x * sin(roomba_state_yaw) - odom_to_base_y * cos(roomba_state_yaw);
+    geometry_msgs::Quaternion roomba_state_q;
+    tf::quaternionTFToMsg(tf::createQuaternionFromYaw(roomba_state_yaw), roomba_state_q);
+
+    geometry_msgs::TransformStamped roomba_state;
+    roomba_state.header.stamp = ros::Time::now();
+
+    roomba_state.header.frame_id = "map";
+    roomba_state.child_frame_id = "odom";
+
+    roomba_state.transform.translation.x = roomba_state_x;
+    roomba_state.transform.translation.y = roomba_state_y;
+    roomba_state.transform.translation.z = 0.0;
+    roomba_state.transform.rotation = roomba_state_q;
+
+    roomba_state_broadcaster.sendTransform(roomba_state);
 }
 
 // ==== メイン関数 ====

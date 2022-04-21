@@ -2,6 +2,8 @@
 
 <launch>
     <!-- yaml file path-->
+    <arg name="map_file" default="$(find chibi22_b)/map/map.yaml"/>
+    <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)" output="screen"/>
     <arg name="localizer_settings" default="$(find chibi22_b)/config/param/localizer.yaml"/>
 
     <!-- node launch-->
