@@ -3,8 +3,8 @@
 Global_Map_Inflater::Global_Map_Inflater():private_nh("~"),nh("")
 {
     private_nh.param("hz_",hz_,{1});
-    private_nh.param("row_",row_,{2000});                                      //マップの行数は適宜設定する
-    private_nh.param("column_",column_,{2000});                                //マップの列数は適宜設定する
+    private_nh.param("row_",row_,{4409});                                      //マップの行数は適宜設定する
+    private_nh.param("column_",column_,{4409});                                //マップの列数は適宜設定する
     update_map = nh.advertise<nav_msgs::OccupancyGrid>("/new_map",1);          //更新したマップをpublish(出版)するノード
     original_map = nh.subscribe("/map",10,&Global_Map_Inflater::callback,this);//元のマップをsubscribe(購読)するノード
 }
