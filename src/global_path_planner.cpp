@@ -58,18 +58,23 @@ void AStar::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 //ウェイポイントの座標を設定
 void AStar::set_waypoint()
 {
-    int x1,x2,y1,y2;
-    x1=1820;
-    y1=2180;
-    x2=2490;
-    y2=2470;
+    int x1,y1,x2,y2,x0;
+    // x1 =  11.5/resolution_;
+    // y1 =  14.5/resolution_;
+    // x2 = -22/resolution_;
+    x1 = 1820;
+    y1 = 2180;
+    x2 = 2490;
+    y2 = 2470;
+    x0 = (x1+x2)/2+100;
 
     waypoint_ = {
-        {x1,y1},
+        {x0,y1},
         {x2,y1},
         {x2,y2},
         {x1,y2},
         {x1,y1},
+        {x0,y1},
     };
 }
 
@@ -143,10 +148,10 @@ int AStar::set_current_delta(int i){
 
 void AStar::update_p_node(int i)
 {
-    min_f_ = open_list_[i].f;                                         //最小コストの更新
-    pre_dist_wp_ = dist_wp_;                                          //ウェイポイントとの距離の記録
-    p_Node_ = open_list_[i];                                          //親ノードに設定
-    open_list_[i].f = 1e10;                                          //Openノードを選択できなくする
+    min_f_ = open_list_[i].f;                                       //最小コストの更新
+    pre_dist_wp_ = dist_wp_;                                        //ウェイポイントとの距離の記録
+    p_Node_ = open_list_[i];                                        //親ノードに設定
+    open_list_[i].f = 1e10;                                         //Openノードを選択できなくする
 }
 
 bool AStar::is_contacted_wall()
@@ -179,15 +184,15 @@ void AStar::set_pNode()
 
     //最小探索
     int count = 0;
-    for(int i=open_list_.size()-1; i>=0; i--)                                                //すべての子ノードを探索
+    for(int i=open_list_.size()-1; i>=0; i--)                                                   //すべての子ノードを探索
     {
         dist_wp_ = std::sqrt(std::pow(open_list_[i].x - x_waypoint_, 2) + std::pow(open_list_[i].y - y_waypoint_, 2));
         if(is_low_cost(i) && is_contact(i) && is_neared())
         {
             if(x_waypoint_ != pre_p_Node_.x && y_waypoint_ != pre_p_Node_.y)                    //斜め移動するとき
             {
-                current_delta_ = set_current_delta(i);                                       //進行方向の記録
-                if(is_contacted_wall())                                                     //壁に接しているとき
+                current_delta_ = set_current_delta(i);                                          //進行方向の記録
+                if(is_contacted_wall())                                                         //壁に接しているとき
                 {
                     if(fabs(x_waypoint_-open_list_[i].x) > fabs(y_waypoint_-open_list_[i].y))   //進行方向による場合分け
                     {
@@ -237,12 +242,12 @@ void AStar::set_kNode()
     //子ノードの設定
     for(int i=0; i<delta_.size(); i++)
     {
-        k_Node_[i].x = p_Node_.x + delta_[i][0];               //子ノードの設定
+        k_Node_[i].x = p_Node_.x + delta_[i][0];                    //子ノードの設定
         k_Node_[i].y = p_Node_.y + delta_[i][1];
         //子ノードのコスト求める
-        // if(map_grid_[k_Node_[i].x][k_Node_[i].y] == 0)         //障害物が存在したらg値大
         //test
-        if(map_grid_[k_Node_[i].x][k_Node_[i].y] <= 100)         //障害物が存在したらg値大
+        // if(map_grid_[k_Node_[i].x][k_Node_[i].y] <= 100)            //テスト用
+        if(map_grid_[k_Node_[i].x][k_Node_[i].y] == 0)           //障害物が存在したらg値大
             k_Node_[i].g = p_Node_.g + 1;
         else
             k_Node_[i].g = wall_cost_;
@@ -279,12 +284,9 @@ int AStar::is_close(int num)
 void AStar::add_path()
 {
     geometry_msgs::PoseStamped path_point_;
-    // path_point_.pose.position.x = double((p_Node_.x - (row_/2)) * resolution_);
-    // path_point_.pose.position.y = double((p_Node_.y - (col_/2)) * resolution_);
     path_point_.pose.position.x = double(p_Node_.x * resolution_);
     path_point_.pose.position.y = double(p_Node_.y * resolution_);
     path_point_.pose.orientation.w = 1;
-    //test
     wp_path_.poses.push_back(path_point_);
     std::cout << "test add x:" << p_Node_.x << " y:" << p_Node_.y << std::endl;
 }
@@ -293,13 +295,13 @@ void AStar::add_path()
 void AStar::update_cost()
 {
     is_updated_ = false;
-    for(int i=0; i<k_Node_.size(); i++)                                  //すべての子ノードについて
+    for(int i=0; i<k_Node_.size(); i++)                                 //すべての子ノードについて
     {
         for(int j=0; j<open_list_.size() && j<close_list_.size(); j++)
         {
             if(!is_close(i)==0)                                         //Closeリストに入っているか調べる
             {
-                if(k_Node_[i].f < close_list_[is_close(i)].f)             //コストが小さければ更新
+                if(k_Node_[i].f < close_list_[is_close(i)].f)           //コストが小さければ更新
                 {
                     close_list_[j].f = k_Node_[i].f;
                     is_updated_ = true;
@@ -307,7 +309,7 @@ void AStar::update_cost()
             }
             else if(!is_open(i)==0)                                     //Openリストに入っているか調べる
             {
-                if(k_Node_[i].f < open_list_[is_open(i)].f)               //コストが小さければ更新
+                if(k_Node_[i].f < open_list_[is_open(i)].f)             //コストが小さければ更新
                 {
                     open_list_[j].f = k_Node_[i].f;
                     is_updated_ = true;
@@ -315,12 +317,12 @@ void AStar::update_cost()
             }
             else
             {
-                open_list_.push_back(k_Node_[i]);                         //リストになければ追加
+                open_list_.push_back(k_Node_[i]);                       //リストになければ追加
                 is_updated_ = true;
             }
         }
     }
-    if(is_updated_) add_path();                                          //親ノードを保存
+    if(is_updated_) add_path();                                         //親ノードを保存
 }
 
 //作成したパスをglobal_path_に追加
@@ -328,7 +330,7 @@ void AStar::make_path()
 {
     add_path();
     global_path_.poses.insert(global_path_.poses.end(), wp_path_.poses.begin(), wp_path_.poses.end());
-    pub_wp_path_.publish(wp_path_);
+    pub_wp_path_.publish(wp_path_);                                     //確認用
 }
 
 //A*を実行
@@ -336,18 +338,18 @@ void AStar::astar_process()
 {
     std::cout << "-----astar_process will begin-----\n" << std::endl;
 
-    set_waypoint();                                                 //ウェイポイントを作成
+    set_waypoint();                                                     //ウェイポイントを作成
     std::cout << "test wp.size:" << waypoint_.size() << std::endl;
 
     //それぞれのウェイポイント間の経路を作成
     for(int phase_ = 1; phase_ < waypoint_.size(); phase_++)
     {
-        is_reached_ = false;                                        //is_reachedの初期化
-        make_heuristic(phase_);                                     //heuristic_関数の作成
-        set_NodeList(open_list_);                                    //openリストcloseリストの初期化
+        is_reached_ = false;                                            //is_reachedの初期化
+        make_heuristic(phase_);                                         //heuristic_関数の作成
+        set_NodeList(open_list_);                                       //openリストcloseリストの初期化
         set_NodeList(close_list_);
-        wp_path_.poses.clear();                                      //ウェイポイント間のパスの初期化
-        x_waypoint_ = waypoint_[phase_][0];                           //ウェイポイントの保存
+        wp_path_.poses.clear();                                         //ウェイポイント間のパスの初期化
+        x_waypoint_ = waypoint_[phase_][0];                             //ウェイポイントの保存
         y_waypoint_ = waypoint_[phase_][1];
         std::cout << "test wp.x:" << x_waypoint_ << " y:" <<  y_waypoint_ << std::endl;
 
@@ -360,9 +362,9 @@ void AStar::astar_process()
         p_Node_ = origin_;
         std::cout << "test origin_.x:" << origin_.x << " y:" << origin_.y << " f:" << origin_.f << "\n" << std::endl;
 
-        while(!is_reached_)                                         //ウェイポイントに到達するまで
+        while(!is_reached_)                                             //ウェイポイントに到達するまで
         {
-            set_pNode();                                            //親ノードを設定
+            set_pNode();                                                //親ノードを設定
             if(p_Node_.x == x_waypoint_ && p_Node_.y == y_waypoint_)    //親ノードとゴールノードが一致したらis_reachedをTrueに
             {
                 is_reached_ = true;
@@ -370,11 +372,11 @@ void AStar::astar_process()
             }
             else
             {
-                set_kNode();                                        //子ノードを設定
-                update_cost();                                      //コストを更新し、ノードをパスに追加
+                set_kNode();                                            //子ノードを設定
+                update_cost();                                          //コストを更新し、ノードをパスに追加
             }
         }
-        make_path();                                                //ウェイポイント間の経路をつなぐ
+        make_path();                                                    //ウェイポイント間の経路をつなぐ
         std::cout << "test fin phase_:" << phase_ << std::endl;
         std::cout << std::endl;
     }
