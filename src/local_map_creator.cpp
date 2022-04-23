@@ -1,135 +1,192 @@
-#include "local_map_creator_wakabayashi/local_map_creator.h"
+#include "local_map_creator/local_map_creator.h"
 
-LocalMapCreator::local_map_creator():private_nh("~")
+LocalMapCreator::LocalMapCreator():private_nh_("~")
 {
-    private_nh.getparam("hz", hz);
-    private_nh.getparam("map_size", map_size);
-    private_nh.getparam("map_reso", map_reso);
-    private_nh.getparam("laser_density", laser_density);
-    private_nh.getparam("roomba_radius", roomba_radius);
-    private_nh.getparam("ignore_angle_mergin", ignore_angle_mergin);
+    private_nh_.param("hz", hz_, {10});
+    private_nh_.param("map_size", map_size_, {4});
+    private_nh_.param("map_reso", map_reso_, {0.02});
+    private_nh_.param("roomba_radius", roomba_radius_, {0.2});
 
-    laser_sub = nh.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
-    local_map_pub = nh.advertise<nav_msgs::OccupancyGrid>("local_map", 10);
-    obstacle_poses_pub = nh.advertise<geometry_msgs::PoseArray>("obstacle_poses", 10);
-    obstacle_poses.header.frame_id = "base_link";
-    local_map.header.frame_id = "base_link";
-    local_map.info.resolution = map_reso;
-    local_map.info.width = map_size / map_reso;
-    local_map.info.height = map_size / map_reso;
-    local_map.info.origin.position.x = - map_size / 2;
-    local_map.info.origin.position.y = - map_size / 2;
-    local_map.data.reserve(local_map.info.width * local_map.info.height);
+    laser_sub_ = nh_.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
+    local_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("local_map", 10);
+    obstacle_poses_pub_ = nh_.advertise<geometry_msgs::PoseArray>("/local_map/obstacle", 10);
+
+    obstacle_poses_.header.frame_id = "base_link";
+    local_map_.header.frame_id = "base_link";
+    local_map_.info.resolution = map_reso_;
+    local_map_.info.width = map_size_ / map_reso_;
+    local_map_.info.height = map_size_ / map_reso_;
+    local_map_.info.origin.position.x = - map_size_ / 2;
+    local_map_.info.origin.position.y = - map_size_ / 2;
+    local_map_.data.reserve(local_map_.info.width * local_map_.info.height);
     init_map();
 }
 
-void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
+void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
-    laser = *msg;
+
+    // std::cout << "laser in" << std::endl;
+    laser_ = *msg;
     init_map();
     create_local_map();
-    laser_get_check = true;
+    // std::cout << "laser out" << std::endl;
+    is_laser_checker_ = true;
+    // std::cout << "laser true" << std::endl;
 }
 
 void LocalMapCreator::init_map()
 {
-    local_map.data.clear();  //配列の中身を初期化
-    for(int i=0; size=local_map.info.width * local_map.info.height; i<size; i++) {
-        local_map.data.push_back(-1);
+    local_map_.data.clear();
+    int size = local_map_.info.width * local_map_.info.height;
+    for(int i=0; i<size; i++) {
+        local_map_.data.push_back(-1);
     }
 }
 
+/*int LocalMapCreator::calc_distance(double angle)
+{
+    double base = local_map_.info.width / 2;
+    double tmp = 0;
+    angle = abs(angle);
+
+    if((angle >= 0) && (angle < M_PI / 4)) {
+        tmp = base * tan(angle)
+    } else {
+        tmp = base / tan(angle);
+    }
+    return hypot(base, tmp);
+}*/
+
 int LocalMapCreator::xy_to_map_index(double x, double y)
 {
-    int index_x = int((x - local_map.info.origin.position.x) / local_map.info.resolution);
-    int index_y = int((y - local_map.info.origin.position.y) / local_map.info.resolution);
+    // int x_index = abs(x + local_map_.info.origin.position.x) / map_reso_;
+    // int y_index = abs(y + local_map_.info.origin.position.y) / map_reso_;
 
-    return index_x + index_y * local_map.info.width;
+    int x_index = (x - local_map_.info.origin.position.x) / map_reso_;
+    int y_index = (y - local_map_.info.origin.position.y) / map_reso_;
+    // std::cout << "x_now : " << x << std::endl;
+    // std::cout << "x_index : " << x_index << std::endl;
+    // std::cout << "y_now : " << y << std::endl;
+    // std::cout << "y_index : " << y_index << std::endl;
+
+    return x_index + y_index * local_map_.info.width;
 }
 
-bool LocalMapCreator::check_map_range(double x, double y)
+bool LocalMapCreator::is_map_range_checker(double x, double y)
 {
-    double x_start = local_map.info.origin.position.x;
-    double y_start = local_map.info.origin.position.y;
-    double x_end = x_start + local_map.info.width * local_map.info.resolution;
-    double y_end = y_start + local_map.info.height * local_map.info.resolution;
+    double x_min = local_map_.info.origin.position.x;
+    double y_min = local_map_.info.origin.position.y;
+    double x_max = x_min + local_map_.info.width * local_map_.info.resolution;
+    double y_max = y_min + local_map_.info.height * local_map_.info.resolution;
 
-    if((x_start < x) && (x_end > x) && (y_start < y) && (y_end > y)) {
+    if((x_min < x) && (x_max > x) && (y_min < y) && (y_max > y)) {
         return true;
     } else {
         return false;
     }
 }
 
-bool LocalMapCreator::is_ignore_angle(double angle)
+bool LocalMapCreator::is_ignore_angle_checker(double angle)
 {
-    if((angle > -3.0/4 * M_PI + ignore_angle_mergin) && (angle < -1.0/4 * M_PI - ignore_angle_mergin)) {
+    angle = abs(angle);
+
+    // std::cout << "abs(angle) : " << angle << std::endl;
+
+    if((angle > M_PI * 3/16) && (angle < M_PI * 5/16)) {
+        // std::cout << "false" << std::endl;
         return false;
-    } else if((angle > -1.0/4 * M_PI + ignore_angle_mergin) && (angle < 1.0/4 * M_PI - ignore_angle_mergin)) {
+    } else if(angle > M_PI * 11/16) {
+        // std::cout << "false" << std::endl;
         return false;
-    } else if((angle > 1.0/4 * M_PI + ignore_angle_mergin) && (angle < 3.0/4 * M_PI - ignore_angle_mergin)) {
-        return false;
+    } else {
+        // std::cout << "true" << std::endl;
+        return true;
     }
-    return true;
 }
 
-void LocalMapCreator::create_line(double yaw, double laser_range)
+bool LocalMapCreator::is_range_checker(double laser_range)
 {
-    double search_step = map_reso;
+    if(laser_range < roomba_radius_) {
+        return false;
+    } else {
+        return true;
+    }
+}
 
-    if((laser_range <= roomba_radius) || (is_ignore_angle(yaw))) {
-            laser_range = map_size;
+void LocalMapCreator::create_line(double angle, double laser_range)
+{
+    if(!is_range_checker(laser_range) || (!is_ignore_angle_checker(angle))) {
+        laser_range = map_size_;
     }
 
-    double x_now = 0;
-    double y_now = 0;
+    // std::cout << "create_line start" << std::endl;
 
-    for(double dist_from_start = 0; dist_from_start < map_size; dist_from_start += search_step) {
-        x_now = dist_from_start * std::cos(yaw);
-        y_now = dist_from_start * std::sin(yaw);
+    for(double distance = 0; distance < map_size_; distance+=map_reso_) {
+        // std::cout << "for start" << std::endl;
+        double x_now = distance * std::cos(angle);
+        double y_now = distance * std::sin(angle);
 
-        if(!check_map_range(x_now, y_now)) {
+        if(!is_map_range_checker(x_now, y_now)) {
             return;
         }
 
         int map_index = xy_to_map_index(x_now, y_now);
+        // std::cout << "map_index : " << map_index << std::endl;
 
-        if(dist_from_start >= laser_range) {
-            local_map.data[map_index] = 100;
-            geometry_msgs::Pose obstacle_pose;
-            obstacle_pose.position.x = x_now;
-            obstacle_pose.position.y = y_now;
-            obstacle_poses.poses.push_back(obstacle_pose);
+        if(distance >= laser_range) {
+            // std::cout << "obstacle start" << std::endl;
+            // std::cout << "distance : " << distance << std::endl;
+            local_map_.data[map_index] = 100;
+            obstacle_pose_.position.x = x_now;
+            obstacle_pose_.position.y = y_now;
+            // std::cout << "x_now : " << x_now << std::endl;
+            // std::cout << "y_now : " << y_now << std::endl;
+            obstacle_poses_.poses.push_back(obstacle_pose_);
             return;
+            // std::cout << "push_back!" << std::endl;
         } else {
-            local_map.data[map_index] = 0;
+            local_map_.data[map_index] = 0;
         }
+        // std::cout << "for end" << std::endl;
     }
+    // std::cout << "create_line end" << std::endl;
 }
 
 void LocalMapCreator::create_local_map()
 {
-    obstacle_poses.poses.clear();
-    double scan_angle = laser.angle_max - laser.angle_min;
-    int laser_step = int(2 * map_reso * laser.ranges.size() / laser_density / scan_angle / map_size);
-    double angle = 0;
+    // std::cout << "create_local_map start" << std::endl;
+    obstacle_poses_.poses.clear();
+    double angle_size = laser_.angle_max - laser_.angle_min;
+    int angle_step = int((laser_.ranges.size() * M_PI) / angle_size / 180 / 2);
 
-    for(int i=0; i<int(laser.ranges.size()) i+=laser_step) {
-        angle = i * laser.angle_increment + laser.angle_min;
-        create_line(angle, laser.ranges[i]);
+    // std::cout << "size" << laser_.ranges.size() << std::endl;
+    // std::cout << "angle_size : " << angle_size << std::endl;
+    // std::cout << "angle_step : " << angle_step << std::endl;
+
+    for(int i=0; i<int(laser_.ranges.size()); i+=angle_step) {
+        double angle = i * laser_.angle_increment + laser_.angle_min;
+        // std::cout << "angle :" << angle << std::endl;
+        // std::cout << "laser_.ranges :" << laser_.ranges[i] << std::endl;
+        create_line(angle, laser_.ranges[i]);
     }
+    // std::cout << "create_local_map finish" << std::endl;
 }
 
 void LocalMapCreator::process()
 {
-    ros::Rate rate(hz);
+    ros::Rate loop_rate(hz_);
     while(ros::ok()) {
-        if(laser_get_check) {
-            local_map_pub.publish(local_map);
-            obstacle_poses_pub.publish(obstacle_poses);
+        if(is_laser_checker_) {
+            // init_map();
+            // std::cout << "map_size_ :" << map_size_ << std::endl;
+            // create_local_map();
+            // local_map_pub_.publish(local_map_);
+            local_map_pub_.publish(local_map_);
+            obstacle_poses_pub_.publish(obstacle_poses_);
+            // std::cout << "publish!" << std::endl;
         }
         ros::spinOnce();
-        rate::sleep();
+        loop_rate.sleep();
     }
 }
 

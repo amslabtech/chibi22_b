@@ -3,12 +3,13 @@
 
 #include "ros/ros.h"
 #include "nav_msgs/Path.h"
+#include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/PoseStamped.h"
 
 class LocalGoalCreator
 {
     public:
-        local_goal_creator();
+        LocalGoalCreator();
         void process();
     private:
         void global_path_callback(const nav_msgs::Path::ConstPtr &msg);
@@ -16,20 +17,20 @@ class LocalGoalCreator
         void select_local_goal();
 
         int hz_;
-        double local_goal_distance_;
         int goal_index_;
-        bool is_global_path_checker = false;
-        bool is_current_pose_checker = false;
+        double local_goal_dist_;
+        bool is_global_path_checker_ = false;
+        bool is_current_pose_checker_ = false;
 
-        ros::NodeHandle nh;
-        ros::NodeHandle private_nh;
-        ros::Subscriber global_path_sub;
-        ros::Subscriber current_pose_sub;
-        ros::Publisher local_goal_pub;
+        ros::NodeHandle nh_;
+        ros::NodeHandle private_nh_;
+        ros::Subscriber global_path_sub_;
+        ros::Subscriber current_pose_sub_;
+        ros::Publisher local_goal_pub_;
 
-        nav_msgs::Path global_path;
-        geometry_msgs::PoseStamped current_pose;
-        geometry_msgs::PoseStamped local_goal;
+        nav_msgs::Path global_path_;
+        geometry_msgs::PoseStamped current_pose_;
+        geometry_msgs::PointStamped local_goal_;
 };
 
 #endif

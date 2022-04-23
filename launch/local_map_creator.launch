@@ -1,0 +1,10 @@
+<?xml version = "1.0"?>
+<launch>
+    <node pkg = "chibi22_test" name = "local_map_creator" type = "local_map_creator" output="screen">
+        <param name = "hz_" type = "int" value = "10"/>
+        <param name = "map_size_" type = "double" value = "4"/>
+        <param name = "map_reso_" type = "double" value = "0.05"/>
+        <param name = "roomba_radius_" type = "double" value = "0.2"/>
+    </node>
+    <!-- <node pkg = "roomba_500driver_meiji" name = "roomba_500driver_meiji" type = "main500"/> -->
+</launch>
