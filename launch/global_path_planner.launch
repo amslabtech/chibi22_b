@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <!-- yaml file path -->
+    <!-- config file path -->
     <arg name="rviz_settings" default="$(find chibi22_b)/config/rviz/chibi22_b.rviz"/>
     <arg name="map_file" default="$(find chibi22_b)/map/map.yaml"/>
     <!-- <arg name="global_path_planner_settings" default="$(find chibi22_b)/config/param/global_path_planner.yaml"/> -->
