@@ -1,9 +1,15 @@
 <?xml version="1.0"?>
 <launch>
     <!-- yaml file path -->
-    <arg name="global_path_planner_settings" default="$(find chibi22_b)/config/param/global_path_planner.yaml"/>
+    <arg name="rviz_settings" default="$(find chibi22_b)/config/rviz/chibi22_b.rviz"/>
+    <arg name="map_file" default="$(find chibi22_b)/map/map.yaml"/>
+    <!-- <arg name="global_path_planner_settings" default="$(find chibi22_b)/config/param/global_path_planner.yaml"/> -->
+
     <!-- node launch -->
-    <node pkg="chibi22_b" type="global_path_planner" name="global_path_planner" >
-        <rosparam command="load" file="$(arg global_path_planner_settings)"/>
-    </node>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(arg rviz_settings)" output="screen"/>
+    <node pkg="chibi22_b" type="global_path_planner" name="global_path_planner" output="screen"/>
+    <node pkg="chibi22_b" type="global_map_inflater" name="global_map_inflater" output="screen"/>
+    <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" output="screen"/>
+        <!-- <rosparam command="load" file="$(arg global_path_planner_settings)"/> -->
+    <!-- </node> -->
 </launch>
