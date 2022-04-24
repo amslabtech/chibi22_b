@@ -5,8 +5,8 @@ yawrate       : 旋回速度
 speed         : 速度の総称(vel, yawrate)
 */
 
-#ifndef LOCAL_PATH_PLANNER
-#define LOCAL_PATH_PLANNER
+#ifndef LOCAL_PATH_PLANNER_H
+#define LOCAL_PATH_PLANNER_H
 
 #include <ros/ros.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -51,7 +51,7 @@ private:
     // 各種コールバック関数
     void local_goal_callback(const geometry_msgs::PointStamped::ConstPtr& msg);
     void ob_poses_callback(const geometry_msgs::PoseArray::ConstPtr& msg);
-    
+
     // その他の関数
     void   roomba_control(const double velocity, const double yawrate);                                         // Roombaの制御入力
     void   move(State& state, const double velocity, const double yawrate);                                     // 予測軌跡作成時における仮想ロボットの移動
@@ -96,7 +96,7 @@ private:
     double weight_vel_;
 
 
-    // ----- オブジェクト -----
+    // ----- その他のオブジェクト -----
     State roomba_;
     DynamicWindow dw_;
 
