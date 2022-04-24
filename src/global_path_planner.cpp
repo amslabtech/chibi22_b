@@ -58,23 +58,29 @@ void AStar::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 //ウェイポイントの座標を設定
 void AStar::set_waypoint()
 {
-    int x1,y1,x2,y2,x0;
-    // x1 =  11.5/resolution_;
-    // y1 =  14.5/resolution_;
-    // x2 = -22/resolution_;
-    x1 = 1820;
-    y1 = 2180;
-    x2 = 2490;
-    y2 = 2470;
-    x0 = (x1+x2)/2+100;
+    std::cout << "origin_.x:" << origin_.x << " y:" << origin_.y << std::endl;
+    map_origin_x_ = origin_.x / resolution_;
+    map_origin_y_ = origin_.y / resolution_;
+
+    int x0,y0,x1,y1,x2;
+    x0 =  0;
+    y0 =  0;
+    x1 =  11.5/resolution_;
+    y1 =  14.5/resolution_;
+    x2 = -22.0/resolution_;
+    // x1 = 1820;
+    // y1 = 2470;
+    // x2 = 2490;
+    // x0 = (x1+x2)/2+100;
+    // y0 = 2180;
 
     waypoint_ = {
-        {x0,y1},
-        {x2,y1},
-        {x2,y2},
-        {x1,y2},
+        {x0,y0},
+        {x1,y0},
         {x1,y1},
-        {x0,y1},
+        {x2,y1},
+        {x2,y0},
+        {x0,y0},
     };
 }
 
@@ -104,10 +110,10 @@ void AStar::make_heuristic(int phase_){
     {
         for(int j=0; j<col_; j++)
         {
-            heuristic_[i][j] = abs(waypoint_[phase_][0] - i) + abs(waypoint_[phase_][1] - j);    //ゴールからの距離で設定
+            heuristic_[i][j] = abs(waypoint_[phase_][0] + abs(map_origin_x_) - i) + abs(waypoint_[phase_][1] + abs(map_origin_y_) - j);    //ゴールからの距離で設定
         }
     }
-    std::cout << "test h-v start:" << heuristic_[waypoint_[phase_-1][0]][waypoint_[phase_-1][0]] << " goal:" << heuristic_[waypoint_[phase_][0]][waypoint_[phase_][1]] << std::endl;
+    std::cout << "test h-v start:" << heuristic_[waypoint_[phase_-1][0] + abs(map_origin_x_)][waypoint_[phase_-1][0] + abs(map_origin_y_)] << " goal:" << heuristic_[waypoint_[phase_][0] + abs(map_origin_x_)][waypoint_[phase_][1] + abs(map_origin_y_)] << std::endl;
     std::cout << "made heuristic_\n" << std::endl;
 }
 
@@ -140,10 +146,7 @@ int AStar::set_current_delta(int i){
     else if(open_list_[i].x - pre_p_Node_.x == -1 && open_list_[i].y - pre_p_Node_.y == 0)
         return 3;
     else
-    {
-        std::cout << "Error in set_c_delta_" << std::endl;
         return 5;
-    }
 }
 
 void AStar::update_p_node(int i)
@@ -156,7 +159,10 @@ void AStar::update_p_node(int i)
 
 bool AStar::is_contacted_wall()
 {
-    if(map_grid_[pre_p_Node_.x][pre_p_Node_.y] != 0 || map_grid_[pre_p_Node_.x+1][pre_p_Node_.y-1] != 0 || map_grid_[pre_p_Node_.x-1][pre_p_Node_.y+1] != 0 || map_grid_[pre_p_Node_.x-1][pre_p_Node_.y-1] != 0)
+    int x,y;
+    x = pre_p_Node_.x - map_origin_x_;
+    y = pre_p_Node_.x - map_origin_y_;
+    if(map_grid_[x+1][y+1]!=0 || map_grid_[x+1][y-1]!=0 || map_grid_[x-1][y+1]!=0 || map_grid_[x-1][y-1]!=0)
         return true;
     else
         return false;
@@ -173,11 +179,11 @@ bool AStar::is_neared()
 //親ノードの探索
 void AStar::set_pNode()
 {
-    pre_p_Node_ = p_Node_;    //直前の親ノードの保存
-    p_Node_ = init_Node_;     //親ノードの初期化
+    pre_p_Node_ = p_Node_;  //直前の親ノードの保存
+    p_Node_ = init_Node_;   //親ノードの初期化
     p_Node_.g = 1;
     p_Node_.f = 1e10;
-    min_f_ = 1e10;           //各変数の初期化
+    min_f_ = 1e10;          //各変数の初期化
     dist_wp_ = 1e20;
     pre_dist_wp_ = 1e20;
     current_delta_ = 5;
@@ -242,18 +248,17 @@ void AStar::set_kNode()
     //子ノードの設定
     for(int i=0; i<delta_.size(); i++)
     {
-        k_Node_[i].x = p_Node_.x + delta_[i][0];                    //子ノードの設定
+        k_Node_[i].x = p_Node_.x + delta_[i][0];                                        //子ノードの設定
         k_Node_[i].y = p_Node_.y + delta_[i][1];
         //子ノードのコスト求める
-        //test
-        // if(map_grid_[k_Node_[i].x][k_Node_[i].y] <= 100)            //テスト用
-        if(map_grid_[k_Node_[i].x][k_Node_[i].y] == 0)           //障害物が存在したらg値大
+        // if(map_grid_[k_Node_[i].x-map_origin_x_][k_Node_[i].y-map_origin_y_] <= 100)    //テスト用
+        if(map_grid_[k_Node_[i].x-map_origin_x_][k_Node_[i].y-map_origin_y_] == 0)      //障害物が存在したらg値大
             k_Node_[i].g = p_Node_.g + 1;
         else
             k_Node_[i].g = wall_cost_;
-        k_Node_[i].f = heuristic_[k_Node_[i].x][k_Node_[i].y] + k_Node_[i].g;
+        k_Node_[i].f = heuristic_[k_Node_[i].x-map_origin_x_][k_Node_[i].y-map_origin_y_] + k_Node_[i].g;
     }
-    close_list_.push_back(p_Node_);                           //親ノードをCloseリストに移動
+    close_list_.push_back(p_Node_);                                                     //親ノードをCloseリストに移動
 }
 
 //Openリストに入っているか調べる
@@ -356,11 +361,11 @@ void AStar::astar_process()
         y_waypoint_ = waypoint_[phase_][1];
         std::cout << "test wp.x:" << x_waypoint_ << " y:" <<  y_waypoint_ << std::endl;
 
-        //スタートノードをOpenリストに格納
+        //スタートノードを親ノードに
         origin_.x = waypoint_[phase_-1][0];
         origin_.y = waypoint_[phase_-1][1];
         origin_.g = 0;
-        origin_.f = heuristic_[origin_.x][origin_.y] + origin_.g;
+        origin_.f = heuristic_[origin_.x-map_origin_x_][origin_.y-map_origin_y_] + origin_.g;
         open_list_.push_back(origin_);
         p_Node_ = origin_;
         std::cout << "test origin_.x:" << origin_.x << " y:" << origin_.y << " f:" << origin_.f << "\n" << std::endl;
