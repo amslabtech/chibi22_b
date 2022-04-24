@@ -21,13 +21,10 @@ class AStar{
         void process();
 
     private:
-        void set_waypoint();                                            //ウェイポイントの作成
-        void set_goal();                                                //ゴールの作成
-        void thick_wall();                                              //障害物の当たり判定大きく
-        void make_heuristic(int Phase);                                 //heuristic関数作成
-        void astar_process();                                           //A*やる
         void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &);   //受け取ったデータをマップに変換
-        void make_testMap();                                            //テスト用マップ作成
+        void set_waypoint();                                            //ウェイポイントの作成
+        void make_heuristic(int Phase);                                 //heuristic関数作成
+        void astar_process();                                           //A*process
 
         //path作成で使用
         void set_NodeList(std::vector<Node> &);                         //ノードリストの初期化
@@ -52,17 +49,13 @@ class AStar{
         int    col_;
         int    phase_;
         double resolution_;
-        double wall_cost_;                                               //障害物のコスト設定
-        double dist_wp_;
-        double pre_dist_wp_;
-        int    current_delta_;
-        int    pre_delta_;
-        Node   init_Node_ = {0, 0, 0, 0};                                //初期化ノード
-        Node   origin_;                                                  //start位置
-        std::vector<std::vector<int>> map_grid_;                         //map格納
-        std::vector<std::vector<int>> heuristic_;                        //heuristic関数格納
-        std::vector<std::vector<int>> waypoint_;                         //waypoint格納
-        std::vector<std::vector<int>> delta_ = {                         //子ノード設定用
+        double wall_cost_;                                              //障害物のコスト設定
+        Node   init_Node_ = {0, 0, 0, 0};                               //初期化ノード
+        Node   origin_;                                                 //start位置
+        std::vector<std::vector<int>> map_grid_;                        //map格納
+        std::vector<std::vector<int>> heuristic_;                       //heuristic関数格納
+        std::vector<std::vector<int>> waypoint_;                        //waypoint格納
+        std::vector<std::vector<int>> delta_ = {                        //子ノード設定用
             {0,1},
             {0,-1},
             {-1,0},
@@ -76,6 +69,8 @@ class AStar{
         //ゴールの座標
         int    x_waypoint_;
         int    y_waypoint_;
+        int    map_origin_x_;
+        int    map_origin_y_;
 
         //親ノードと子ノードの宣言
         Node   p_Node_;
@@ -87,6 +82,10 @@ class AStar{
 
         //updateCost内で使用
         bool   is_updated_;
+        int    current_delta_;                                          //移動方向の保存
+        int    pre_delta_;
+        double dist_wp_;                                                //ウェイポイントとの距離
+        double pre_dist_wp_;
 
         //各プロセスが為されているか
         bool   map_checker_;
