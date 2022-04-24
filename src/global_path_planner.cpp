@@ -284,9 +284,12 @@ int AStar::is_close(int num)
 void AStar::add_path()
 {
     geometry_msgs::PoseStamped path_point_;
+    // path_point_.pose.position.x = double((p_Node_.x - (row_/2)) * resolution_);
+    // path_point_.pose.position.y = double((p_Node_.y - (col_/2)) * resolution_);
     path_point_.pose.position.x = double(p_Node_.x * resolution_);
     path_point_.pose.position.y = double(p_Node_.y * resolution_);
     path_point_.pose.orientation.w = 1;
+    //test
     wp_path_.poses.push_back(path_point_);
     std::cout << "test add x:" << p_Node_.x << " y:" << p_Node_.y << std::endl;
 }
