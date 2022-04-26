@@ -222,7 +222,7 @@ double Localizer::dist_on_map(double map_x, double map_y, double laser_dist, dou
 
         int map_occupancy = get_map_occupancy(map_x, map_y);
 
-        if(map_occupancy == 100)    return distance;
+        if(map_occupancy != 0)    return distance;
     }
     return search_limit;
 }

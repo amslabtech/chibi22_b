@@ -23,6 +23,6 @@ reset_interval: 3.0 #(sec)
 
 resampling_noise_rate: 0.001
 
-alpha_slow_th: 0.05
+alpha_slow_th: 0.001
 alpha_fast_th: 0.1
-expansion_rate: 0.20
+expansion_rate: 0.1
