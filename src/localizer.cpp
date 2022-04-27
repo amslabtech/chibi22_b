@@ -58,8 +58,8 @@ Localizer::Localizer():private_nh_("~")
     sub_map_ = nh_.subscribe("/map", 10, &Localizer::map_callback, this);
 
     // Publisher
-    pub_estimated_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/estimated_pose_22_b", 1);
-    pub_particle_cloud_ = nh_.advertise<geometry_msgs::PoseArray>("/particle_cloud_22_b", 1);
+    pub_estimated_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/estimated_pose", 1);
+    pub_particle_cloud_ = nh_.advertise<geometry_msgs::PoseArray>("/particle_cloud", 1);
 
 }
 
@@ -369,6 +369,7 @@ void Localizer::estimate_pose()
 void Localizer::process()
 {
     ros::Rate loop_rate(hz_);
+    bool start = false;
 
     while(ros::ok())
     {
@@ -379,8 +380,13 @@ void Localizer::process()
                 initialize();
                 init_request_ = false;
             }
-            motion_update();
-            measurement_update();
+            if(current_odometry_ != previous_odometry_)
+                start = true;
+            if(start)
+            {
+                motion_update();
+                measurement_update();
+            }
 
             publish_particles();
             publish_estimated_pose();
