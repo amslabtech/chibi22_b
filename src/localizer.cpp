@@ -166,7 +166,7 @@ void Localizer::measurement_update()
     if(reset_request())
     {
         expansion_reset();
-        reset_blank_ = (int)round(reset_interval_ * hz_);
+        reset_blank_ = (int)(reset_interval_ * hz_);
     }
     else
     {
