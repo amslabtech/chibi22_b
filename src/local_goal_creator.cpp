@@ -18,7 +18,6 @@ LocalGoalCreator::LocalGoalCreator():private_nh_("~")
 void LocalGoalCreator::global_path_callback(const nav_msgs::Path::ConstPtr &msg)
 {
     global_path_ = *msg;
-    // std::cout << "path_size :" << global_path_.poses.size() << std::endl;
     local_goal_.point.x = global_path_.poses[goal_index_].pose.position.x;  //xの値を代入
     local_goal_.point.y = global_path_.poses[goal_index_].pose.position.y;  //yの値を代入
     is_global_path_checker_ = true;                                        //値を受け取ったことを確認する
@@ -37,33 +36,26 @@ void LocalGoalCreator::select_local_goal()
     double dx = current_pose_.pose.position.x - global_path_.poses[goal_index_].pose.position.x;  //A*でもらったxと現在のxの差
     double dy = current_pose_.pose.position.y - global_path_.poses[goal_index_].pose.position.y;  //A*でもらったyと現在のyの差
     double distance = hypot(dx, dy);                                                              //直線距離の差を求める
-    std::cout << "distance : " << distance << std::endl;
-    std::cout << "goal_index_ : " << goal_index_ << std::endl;
 
     if(distance < local_goal_dist_)
     {
         dx = current_pose_.pose.position.x - global_path_.poses[goal_index_].pose.position.x;  //A*でもらったxと現在のxの差
         dy = current_pose_.pose.position.y - global_path_.poses[goal_index_].pose.position.y;  //A*でもらったyと現在のyの差
         distance = hypot(dx, dy);                                                              //直線距離の差を求める
-        // std::cout << "distance : " << distance << std::endl;
 
         goal_index_ += 3;  //goal位置を、callback関数で受け取った時よりも少し先へ移動させる
-        // ROS_INFO_STREAM("goal_index_ : "<<goal_index_);
 
         if(goal_index_ < global_path_.poses.size())  //global_path_の配列の範囲におさまっていれば
         {
             local_goal_.point.x = global_path_.poses[goal_index_].pose.position.x;
             local_goal_.point.y = global_path_.poses[goal_index_].pose.position.y;
-            std::cout << "version 1" << std::endl;
         }
         else  //goalの位置に到着したら
         {
             goal_index_ = global_path_.poses.size() -1;
             local_goal_.point.x = global_path_.poses[goal_index_].pose.position.x;
             local_goal_.point.y = global_path_.poses[goal_index_].pose.position.y;
-            std::cout << "version 2" << std::endl;
         }
-        //local_goal_.point.orientation.w = 1;
     }
 }
 
@@ -76,7 +68,6 @@ void LocalGoalCreator::process()
             select_local_goal();
             local_goal_.header.stamp = ros::Time::now();
             local_goal_pub_.publish(local_goal_);
-            std::cout << "publish!" << std::endl;
         }
         ros::spinOnce();
         loop_rate.sleep();
