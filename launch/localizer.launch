@@ -13,5 +13,5 @@
     </node>
     <node pkg="rosbag" name="bag" type="play" args="--clock $(env HOME)/bag/test_ok.bag"/>
     <node pkg="tf2_ros" type="static_transform_publisher" name="static_transform_publisher" args="0 0 0 0 0 0 1 /base_link /laser"/>
-    <node pkg="rviz" name="rviz" type="rviz" args="$(env HOME)/bag/localizer_move_test.rviz" output="screen"/>
+    <node pkg="rviz" name="rviz" type="rviz" args=" -d $(env HOME)/bag/localizer_test.rviz" output="screen"/>
 </launch>
