@@ -7,7 +7,7 @@ hz: 10 # [Hz]
 # 速度制限
 max_vel: 0.3      # [m/s]
 min_vel: 0.0     # [m/s]
-max_yawrate: 0.55 # [rad/s]
+max_yawrate: 0.6 # [rad/s]
 
 # 加速度制限
 max_accel: 1000.0    # [m/s^2]
