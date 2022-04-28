@@ -19,11 +19,9 @@ laser_noise_rate: 0.10 #(m/m)
 laser_step: 10
 laser_ignore_range: 0.30
 
-reset_limit: 50
-
-resampling_noise_rate: 0.1
-
-alpha_th: 0.35
+expansion_limit: 10
+alpha_th: 1.00
 alpha_slow_th: 0.001
 alpha_fast_th: 0.1
-expansion_rate: 0.10
+expansion_rate: 0.02
+adaptive_reset_noise_rate: 0.25

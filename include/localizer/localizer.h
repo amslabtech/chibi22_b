@@ -91,14 +91,14 @@ private:
     double laser_noise_rate_ = 0.0;
     int laser_step_ = 0;
     double laser_ignore_range_ = 0.0;
-    int reset_limit_ = 0;
-    double resampling_noise_rate_ = 0.0;
+    int expansion_limit_ = 0;
     double alpha_th_ = 0.0;
     double alpha_slow_th_ = 0.0;
     double alpha_fast_th_ = 0.0;
     double expansion_rate_ = 0.0;
+    double adaptive_reset_noise_rate_ = 0.0;
 
-    int reset_count_ = 0;
+    int expansion_count_ = 0;
     double alpha_ = 0.0;
     double alpha_slow_ = 0.0;
     double alpha_fast_ = 0.0;
