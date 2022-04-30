@@ -95,8 +95,8 @@ class AStar{
         bool   path_checker_;
 
         //時間計測
-        time_t ref_time_;
-        time_t cur_time_;
+        clock_t ref_time_;
+        clock_t cur_time_;
 
         ros::NodeHandle nh_;
         ros::NodeHandle private_nh_;

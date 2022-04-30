@@ -49,7 +49,7 @@ void AStar::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 
         map_checker_ = true;
 
-        ref_time_ = time(NULL);
+        ref_time_ = clock();
 
         std::cout << "row:" << row_ << " col_:" << col_ << std::endl;
         std::cout << "set_map finished\n" << std::endl;
@@ -337,8 +337,8 @@ void AStar::make_path()
 
 void AStar::show_time()
 {
-    cur_time_ = time(NULL);
-    std::cout << "実行時間：" << cur_time_ - ref_time_ << "s" << std::endl;
+    cur_time_ = clock();
+    std::cout << "実行時間：" << (cur_time_ - ref_time_)/1e6 << "s" << std::endl;
 }
 
 //A*を実行
