@@ -8,9 +8,9 @@ AStar::AStar():private_nh_("~")
     private_nh_.param("is_reached", is_reached_, {false});
     private_nh_.param("wall_cost", wall_cost_, {1e10});
 
-    sub_map_ = nh_.subscribe("/new_map", 10, &AStar::map_callback, this);                      //mapデータの受信
-    pub_path_ = nh_.advertise<nav_msgs::Path>("/global_path", 1);                          //出力するパス
-    pub_wp_path_ = nh_.advertise<nav_msgs::Path>("/wp_path", 1);                           //1辺
+    sub_map_ = nh_.subscribe("/new_map", 10, &AStar::map_callback, this);                   //mapデータの受信
+    pub_path_ = nh_.advertise<nav_msgs::Path>("/global_path", 1);                           //出力するパス
+    pub_wp_path_ = nh_.advertise<nav_msgs::Path>("/wp_path", 1);                            //1辺
 }
 
 //mapを格納
@@ -25,11 +25,11 @@ void AStar::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     }
     else
     {
-        row_ = map_data_.info.height;                                                     //マップの大きさを保存
+        row_ = map_data_.info.height;                                                       //マップの大きさを保存
         col_ = map_data_.info.width;
         resolution_ = map_data_.info.resolution;
 
-        map_grid_ = std::vector<std::vector<int>>(row_, std::vector<int>(col_,0));         //map_gridの初期化
+        map_grid_ = std::vector<std::vector<int>>(row_, std::vector<int>(col_,0));          //map_gridの初期化
 
         //マップデータを変換
         for(int i=0;i<row_;i++)
@@ -49,6 +49,8 @@ void AStar::map_callback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 
         map_checker_ = true;
 
+        ref_time_ = time(NULL);
+
         std::cout << "row:" << row_ << " col_:" << col_ << std::endl;
         std::cout << "set_map finished\n" << std::endl;
         sleep(1);
@@ -66,13 +68,8 @@ void AStar::set_waypoint()
     x0 =  0;
     y0 =  0;
     x1 =  11.5/resolution_;
-    y1 =  14.5/resolution_;
+    y1 =  14.4/resolution_;
     x2 = -22.0/resolution_;
-    // x1 = 1820;
-    // y1 = 2470;
-    // x2 = 2490;
-    // x0 = (x1+x2)/2+100;
-    // y0 = 2180;
 
     waypoint_ = {
         {x0,y0},
@@ -114,7 +111,7 @@ void AStar::make_heuristic(int phase_){
         }
     }
     std::cout << "test h-v start:" << heuristic_[waypoint_[phase_-1][0] + abs(map_origin_x_)][waypoint_[phase_-1][0] + abs(map_origin_y_)] << " goal:" << heuristic_[waypoint_[phase_][0] + abs(map_origin_x_)][waypoint_[phase_][1] + abs(map_origin_y_)] << std::endl;
-    std::cout << "made heuristic_\n" << std::endl;
+    std::cout << "made heuristic" << std::endl;
 }
 
 //コストは最小か
@@ -232,7 +229,7 @@ void AStar::set_pNode()
     {
         std::cout << "Error in set_pNode\n" << std::endl;
         sleep(3);
-        exit;
+        exit(0);
     }
 }
 
@@ -250,8 +247,7 @@ void AStar::set_kNode()
     {
         k_Node_[i].x = p_Node_.x + delta_[i][0];                                        //子ノードの設定
         k_Node_[i].y = p_Node_.y + delta_[i][1];
-        //子ノードのコスト求める
-        // if(map_grid_[k_Node_[i].x-map_origin_x_][k_Node_[i].y-map_origin_y_] <= 100)    //テスト用
+                //子ノードのコスト求める
         if(map_grid_[k_Node_[i].x-map_origin_x_][k_Node_[i].y-map_origin_y_] == 0)      //障害物が存在したらg値大
             k_Node_[i].g = p_Node_.g + 1;
         else
@@ -289,14 +285,12 @@ int AStar::is_close(int num)
 void AStar::add_path()
 {
     geometry_msgs::PoseStamped path_point_;
-    // path_point_.pose.position.x = double((p_Node_.x - (row_/2)) * resolution_);
-    // path_point_.pose.position.y = double((p_Node_.y - (col_/2)) * resolution_);
     path_point_.pose.position.x = double(p_Node_.x * resolution_);
     path_point_.pose.position.y = double(p_Node_.y * resolution_);
     path_point_.pose.orientation.w = 1;
     //test
-    wp_path_.poses.push_back(path_point_);
-    std::cout << "test add x:" << p_Node_.x << " y:" << p_Node_.y << std::endl;
+    // wp_path_.poses.push_back(path_point_);
+    // std::cout << "test add x:" << p_Node_.x << " y:" << p_Node_.y << std::endl;
 }
 
 //ノードのコストを更新し、親ノードを記録する
@@ -341,6 +335,12 @@ void AStar::make_path()
     pub_wp_path_.publish(wp_path_);                                     //確認用
 }
 
+void AStar::show_time()
+{
+    cur_time_ = time(NULL);
+    std::cout << "実行時間：" << cur_time_ - ref_time_ << "s" << std::endl;
+}
+
 //A*を実行
 void AStar::astar_process()
 {
@@ -368,7 +368,7 @@ void AStar::astar_process()
         origin_.f = heuristic_[origin_.x-map_origin_x_][origin_.y-map_origin_y_] + origin_.g;
         open_list_.push_back(origin_);
         p_Node_ = origin_;
-        std::cout << "test origin_.x:" << origin_.x << " y:" << origin_.y << " f:" << origin_.f << "\n" << std::endl;
+        std::cout << "test origin.x:" << origin_.x << " y:" << origin_.y << " f:" << origin_.f << std::endl;
 
         while(!is_reached_)                                             //ウェイポイントに到達するまで
         {
@@ -376,7 +376,12 @@ void AStar::astar_process()
             if(p_Node_.x == x_waypoint_ && p_Node_.y == y_waypoint_)    //親ノードとゴールノードが一致したらis_reachedをTrueに
             {
                 is_reached_ = true;
-                std::cout << "reached waypoint_" << std::endl;
+                std::cout << "reached waypoint" << std::endl;
+            }
+            else if(map_grid_[p_Node_.x-map_origin_x_][p_Node_.y-map_origin_y_] != 0)
+            {
+                ROS_ERROR_STREAM("NULL NODE");
+                exit(0);
             }
             else
             {
@@ -385,7 +390,7 @@ void AStar::astar_process()
             }
         }
         make_path();                                                    //ウェイポイント間の経路をつなぐ
-        std::cout << "test fin phase_:" << phase_ << std::endl;
+        std::cout << "test fin phase:" << phase_ << std::endl;
         std::cout << std::endl;
     }
 }//A*process
@@ -400,8 +405,11 @@ void AStar::process()
         {
             astar_process();
             pub_path_.publish(global_path_);
+            show_time();
             path_checker_ = true;
         }
+        if(path_checker_)
+            exit(0);
         ros::spinOnce();
         loop_rate.sleep();
     }
