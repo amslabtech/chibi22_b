@@ -66,7 +66,7 @@ bool LocalMapCreator::is_ignore_angle_checker(double angle)
 {
     angle = abs(angle);
 
-    if((angle > M_PI * 3/16) && (angle < M_PI * 5/16)) {
+    if((angle > M_PI * 2/16) && (angle < M_PI * 5/16)) {
         return false;
     } else if(angle > M_PI * 11/16) {
         return false;
