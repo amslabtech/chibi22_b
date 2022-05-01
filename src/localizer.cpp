@@ -45,12 +45,12 @@ Localizer::Localizer():private_nh_("~")
     private_nh_.getParam("laser_noise_rate", laser_noise_rate_);
     private_nh_.getParam("laser_step", laser_step_);
     private_nh_.getParam("laser_ignore_range", laser_ignore_range_);
-    private_nh_.getParam("reset_interval", reset_interval_);
-    private_nh_.getParam("resampling_noise_rate", resampling_noise_rate_);
+    private_nh_.getParam("expansion_limit", expansion_limit_);
+    private_nh_.getParam("alpha_th", alpha_th_);
     private_nh_.getParam("alpha_slow_th", alpha_slow_th_);
     private_nh_.getParam("alpha_fast_th", alpha_fast_th_);
     private_nh_.getParam("expansion_rate", expansion_rate_);
-
+    private_nh_.getParam("adaptive_reset_noise_rate", adaptive_reset_noise_rate_);
 
     // Subscriber
     sub_laser_ = nh_.subscribe("/scan", 10, &Localizer::laser_callback, this);
@@ -162,18 +162,19 @@ void Localizer::measurement_update()
         p.set_weight(new_weight);
     }
     normalize_weight();
+    estimate_pose();
+    double normalized_alpha = alpha_ / (laser_.ranges.size() / laser_step_ * num_);
 
-    if(reset_request())
+    if(normalized_alpha < alpha_th_ && expansion_count_ < expansion_limit_)
     {
+        expansion_count_ ++;
         expansion_reset();
-        reset_blank_ = (int)(reset_interval_ * hz_);
     }
     else
     {
         resampling();
-        if(reset_blank_ > 0)    reset_blank_ --;
+        expansion_count_ = 0;
     }
-    estimate_pose();
 
 }
 
@@ -187,14 +188,15 @@ double Localizer::calc_weight(Particle& p)
 
     for(int i=0; i < limit; i += laser_step_)
     {
-        if(laser_.ranges[i] <= laser_ignore_range_)    continue;
+        if(laser_.ranges[i] > laser_ignore_range_)
+        {
+            double sigma = laser_.ranges[i] * laser_noise_rate_;
 
-        double sigma = laser_.ranges[i] * laser_noise_rate_;
+            double laser_dist = set_noise(laser_.ranges[i], sigma);
+            double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), laser_dist, angle);
 
-        double laser_dist = set_noise(laser_.ranges[i], sigma);
-        double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), laser_dist, angle);
-
-        weight += likelihood(map_dist, laser_dist, sigma);
+            weight += likelihood(map_dist, laser_dist, sigma);
+        }
 
         angle = optimize_angle(angle + angle_step * laser_step_);
     }
@@ -257,40 +259,16 @@ void Localizer::normalize_weight()
 
 }
 
-bool Localizer::reset_request()
-{
-    bool reset_flag = false;
-
-    alpha_slow_ += alpha_slow_th_ * (alpha_ - alpha_slow_);
-    alpha_fast_ += alpha_fast_th_ * (alpha_ - alpha_fast_);
-
-    double num_req = (int)num_ * std::max( 0.0, 1.0 - alpha_fast_ / alpha_slow_);
-
-    if(reset_blank_)
-    {
-        if(num_req > num_replace_)
-            num_replace_ = num_req;
-    }
-    else if(num_req > 0)
-    {
-        num_replace_ = num_req;
-        reset_flag = true;
-    }
-
-    return reset_flag;
-}
-
 void Localizer::expansion_reset()
 {
     std::vector<Particle> new_particles;
     new_particles = particles_;
-    std::sort(new_particles.begin(), new_particles.end());
 
-    for(int i=0; i<num_replace_; i++)
+    for(int i=0; i<num_; i++)
     {
-        double x = set_noise(estimated_pose_.get_pose_x(), expansion_rate_);
-        double y = set_noise(estimated_pose_.get_pose_y(), expansion_rate_);
-        double yaw = set_noise(estimated_pose_.get_pose_yaw(), expansion_rate_);
+        double x = set_noise(new_particles[i].get_pose_x(), expansion_rate_);
+        double y = set_noise(new_particles[i].get_pose_y(), expansion_rate_);
+        double yaw = set_noise(new_particles[i].get_pose_yaw(), expansion_rate_);
         new_particles[i].set_pose(x, y, yaw);
     }
 
@@ -302,9 +280,15 @@ void Localizer::expansion_reset()
 void Localizer::resampling()
 {
     std::vector<Particle> new_particles;
+    new_particles.reserve(num_);
 
     std::uniform_int_distribution<> int_dist(0,num_-1);
     std::uniform_real_distribution<> double_dist(0.0,get_max_weight()*2.0);
+
+    alpha_slow_ += alpha_slow_th_ * (alpha_ - alpha_slow_);
+    alpha_fast_ += alpha_fast_th_ * (alpha_ - alpha_fast_);
+
+    num_replace_ = (int) (num_ * std::max( 0.0, 1.0 - alpha_fast_ / alpha_slow_));
 
     int index = int_dist(engine);
     double beta = 0.0;
@@ -317,11 +301,16 @@ void Localizer::resampling()
             beta -= particles_[index].get_weight();
             index = (index+1) % num_;
         }
-        double x = set_noise(particles_[index].get_pose_x(), resampling_noise_rate_);
-        double y = set_noise(particles_[index].get_pose_y(), resampling_noise_rate_);
-        double yaw = set_noise(particles_[index].get_pose_yaw(), resampling_noise_rate_);
-        Particle p(x, y, yaw);
-        new_particles.push_back(p);
+        if(new_particles.size() < num_replace_)
+        {
+            double x = set_noise(estimated_pose_.get_pose_x(), adaptive_reset_noise_rate_);
+            double y = set_noise(estimated_pose_.get_pose_y(), adaptive_reset_noise_rate_);
+            double yaw = set_noise(estimated_pose_.get_pose_yaw(), adaptive_reset_noise_rate_);
+            Particle p(x, y, yaw);
+            new_particles.push_back(p);
+        }
+        else
+            new_particles.push_back(particles_[index]);
     }
 
     particles_ = new_particles;

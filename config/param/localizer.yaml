@@ -12,17 +12,16 @@ init_yaw: 0.0
 x_cov: 0.80
 y_cov: 0.80
 yaw_cov: 0.80
-distance_noise_rate: 0.10 #(m/m)
-rotation_noise_rate: 0.15 #(rad/1rad)
+distance_noise_rate: 0.25 #(m/m)
+rotation_noise_rate: 0.25 #(rad/1rad)
 laser_noise_rate: 0.10 #(m/m)
 
-laser_step: 27
+laser_step: 10
 laser_ignore_range: 0.30
 
-reset_interval: 3.0 #(sec)
-
-resampling_noise_rate: 0.003
-
-alpha_slow_th: 0.005
+expansion_limit: 10
+alpha_th: 1.00
+alpha_slow_th: 0.001
 alpha_fast_th: 0.1
-expansion_rate: 0.25
+expansion_rate: 0.02
+adaptive_reset_noise_rate: 0.25

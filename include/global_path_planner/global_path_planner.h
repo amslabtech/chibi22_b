@@ -22,9 +22,10 @@ class AStar{
 
     private:
         void map_callback(const nav_msgs::OccupancyGrid::ConstPtr &);   //受け取ったデータをマップに変換
+        void astar_process();                                           //A*process
         void set_waypoint();                                            //ウェイポイントの作成
         void make_heuristic(int Phase);                                 //heuristic関数作成
-        void astar_process();                                           //A*process
+        void show_time();                                               //実行時間測定
 
         //path作成で使用
         void set_NodeList(std::vector<Node> &);                         //ノードリストの初期化
@@ -92,6 +93,10 @@ class AStar{
         bool   wall_checker_;
         bool   is_reached_;
         bool   path_checker_;
+
+        //時間計測
+        clock_t ref_time_;
+        clock_t cur_time_;
 
         ros::NodeHandle nh_;
         ros::NodeHandle private_nh_;
