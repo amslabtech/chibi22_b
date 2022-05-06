@@ -31,8 +31,6 @@ public:
     double get_pose_yaw() const {return yaw_;}
     double get_weight() const {return weight_;}
 
-    bool operator<(const Particle& another) const {return weight_ < another.weight_;}
-
 private:
     double x_;
     double y_;
@@ -53,7 +51,7 @@ private:
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg);
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg);
 
-    double set_noise(double mu,double cov);
+    double set_noise(double mu,double dev);
     double optimize_angle(double angle);
 
     void initialize();
@@ -64,7 +62,7 @@ private:
     void measurement_update();
     double calc_weight(Particle& p);
     void normalize_weight();
-    double likelihood(double x,double mu,double sigma);
+    double likelihood(double x,double mu,double dev);
     double dist_on_map(double map_x,double map_y,double laser_dist,double lasor_angle);
     int get_map_occupancy(double x,double y);
     bool reset_request();
@@ -79,24 +77,24 @@ private:
     void broadcast_roomba_state();
 
     int hz_;
-    int num_ = 0;
-    double init_x_ = 0.0;
-    double init_y_ = 0.0;
-    double init_yaw_ = 0.0;
-    double x_cov_ = 0.0;
-    double y_cov_ = 0.0;
-    double yaw_cov_ = 0.0;
-    double distance_noise_rate_ = 0.0;
-    double rotation_noise_rate_ = 0.0;
-    double laser_noise_rate_ = 0.0;
-    int laser_step_ = 0;
-    double laser_ignore_range_ = 0.0;
-    int expansion_limit_ = 0;
-    double alpha_th_ = 0.0;
-    double alpha_slow_th_ = 0.0;
-    double alpha_fast_th_ = 0.0;
-    double expansion_rate_ = 0.0;
-    double adaptive_reset_noise_rate_ = 0.0;
+    int num_;
+    double init_x_;
+    double init_y_;
+    double init_yaw_;
+    double init_dev_;
+    double motion_dev_per_dist_;
+    double motion_dev_per_rot_;
+    double laser_dev_per_dist_;
+    double expansion_reset_dev_;
+    double adaptive_reset_dev_;
+    int laser_step_;
+    double laser_ignore_range_;
+    int expansion_limit_;
+    double alpha_th_;
+    double alpha_slow_th_;
+    double alpha_fast_th_;
+    bool is_visible_;
+
 
     int expansion_count_ = 0;
     double alpha_ = 0.0;
@@ -108,6 +106,7 @@ private:
     bool odometry_got_ = false;
     bool map_got_ = false;
     bool laser_got_ = false;
+    bool start_ = false;
 
     Particle estimated_pose_;
     std::vector<Particle> particles_;
