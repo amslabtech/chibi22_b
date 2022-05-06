@@ -288,9 +288,7 @@ void AStar::add_path()
     path_point_.pose.position.x = double(p_Node_.x * resolution_);
     path_point_.pose.position.y = double(p_Node_.y * resolution_);
     path_point_.pose.orientation.w = 1;
-    //test
-    // wp_path_.poses.push_back(path_point_);
-    // std::cout << "test add x:" << p_Node_.x << " y:" << p_Node_.y << std::endl;
+    wp_path_.poses.push_back(path_point_);
 }
 
 //ノードのコストを更新し、親ノードを記録する
