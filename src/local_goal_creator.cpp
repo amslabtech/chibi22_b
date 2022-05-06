@@ -28,6 +28,7 @@ void LocalGoalCreator::current_pose_callback(const geometry_msgs::PoseStamped::C
 {
     current_pose_ = *msg;
     is_current_pose_checker_ = true;  //値を受け取ったことを確認する
+    std::cout << "callback ok!" << std::endl;
 }
 
 //local_goalを作成する

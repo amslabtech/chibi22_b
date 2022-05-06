@@ -28,6 +28,7 @@ class LocalMapCreator
         double roomba_radius_;
 
         bool is_laser_checker_ = false;
+        bool flag_map_view = true;
 
         ros::NodeHandle nh_;
         ros::NodeHandle private_nh_;

@@ -19,14 +19,16 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
     local_map_.info.origin.position.x = - map_size_ / 2;
     local_map_.info.origin.position.y = - map_size_ / 2;
     local_map_.data.reserve(local_map_.info.width * local_map_.info.height);
-    init_map();
+    // init_map();
 }
 
 void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
 
     laser_ = *msg;
-    init_map();
+    if(flag_map_view) {
+        init_map();
+    }
     create_local_map();
     is_laser_checker_ = true;
 }
@@ -101,13 +103,17 @@ void LocalMapCreator::create_line(double angle, double laser_range)
         int map_index = xy_to_map_index(x_now, y_now);
 
         if(distance >= laser_range) {
-            local_map_.data[map_index] = 100;
+            if(flag_map_view) {
+                local_map_.data[map_index] = 100;
+            }
             obstacle_pose_.position.x = x_now;
             obstacle_pose_.position.y = y_now;
             obstacle_poses_.poses.push_back(obstacle_pose_);
             return;
         } else {
-            local_map_.data[map_index] = 0;
+            if(flag_map_view) {
+                local_map_.data[map_index] = 0;
+            }
         }
     }
 }
@@ -129,7 +135,9 @@ void LocalMapCreator::process()
     ros::Rate loop_rate(hz_);
     while(ros::ok()) {
         if(is_laser_checker_) {
-            local_map_pub_.publish(local_map_);
+            if(flag_map_view) {
+                local_map_pub_.publish(local_map_);
+            }
             obstacle_poses_pub_.publish(obstacle_poses_);
         }
         ros::spinOnce();
