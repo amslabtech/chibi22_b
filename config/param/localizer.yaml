@@ -16,7 +16,7 @@ laser_dev_per_dist: 0.10
 expansion_reset_dev: 0.02
 adaptive_reset_dev: 0.25
 
-laser_step: 10
+laser_step: 20
 laser_ignore_range: 0.30
 
 expansion_limit: 10
