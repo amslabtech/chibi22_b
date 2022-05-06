@@ -63,7 +63,7 @@ private:
     double calc_weight(Particle& p);
     void normalize_weight();
     double likelihood(double x,double mu,double dev);
-    double dist_on_map(double map_x,double map_y,double laser_dist,double lasor_angle);
+    double dist_on_map(double map_x,double map_y,double lasor_angle);
     int get_map_occupancy(double x,double y);
     bool reset_request();
     void expansion_reset();

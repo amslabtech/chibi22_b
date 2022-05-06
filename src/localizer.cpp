@@ -195,7 +195,7 @@ double Localizer::calc_weight(Particle& p)
             double sigma = laser_.ranges[i] * laser_dev_per_dist_;
 
             double laser_dist = set_noise(laser_.ranges[i], sigma);
-            double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), laser_dist, angle);
+            double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), angle);
 
             weight += likelihood(map_dist, laser_dist, sigma);
         }
@@ -212,14 +212,12 @@ double Localizer::likelihood(double x, double mu, double dev)
     return ans;
 }
 
-double Localizer::dist_on_map(double map_x, double map_y, double laser_dist, double laser_angle)
+double Localizer::dist_on_map(double map_x, double map_y, double laser_angle)
 {
-    double distance = 0.0;
-
     double search_step = map_.info.resolution;
-    double search_limit = laser_.range_max;
+    double search_limit = laser_.range_max / 3.0;
 
-    for(distance; distance <= search_limit; distance += search_step)
+    for(double distance = 0.0; distance <= search_limit; distance += search_step)
     {
         map_x += search_step * cos(laser_angle);
         map_y += search_step * sin(laser_angle);
