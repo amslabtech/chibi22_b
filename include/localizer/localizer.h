@@ -86,7 +86,7 @@ private:
     double motion_dev_per_rot_;
     double laser_dev_per_dist_;
     double expansion_reset_dev_;
-    double adaptive_reset_dev_;
+    double resampling_reset_dev_;
     int laser_step_;
     double laser_ignore_range_;
     int expansion_limit_;
@@ -106,7 +106,7 @@ private:
     bool odometry_got_ = false;
     bool map_got_ = false;
     bool laser_got_ = false;
-    bool start_ = false;
+    bool can_move_ = false;
 
     Particle estimated_pose_;
     std::vector<Particle> particles_;

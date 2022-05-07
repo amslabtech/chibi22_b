@@ -42,7 +42,7 @@ Localizer::Localizer():private_nh_("~")
     private_nh_.getParam("motion_dev_per_rot", motion_dev_per_rot_);
     private_nh_.getParam("laser_dev_per_dist", laser_dev_per_dist_);
     private_nh_.getParam("expansion_reset_dev", expansion_reset_dev_);
-    private_nh_.getParam("adaptive_reset_dev", adaptive_reset_dev_);
+    private_nh_.getParam("resampling_reset_dev", resampling_reset_dev_);
     private_nh_.getParam("laser_step", laser_step_);
     private_nh_.getParam("laser_ignore_range", laser_ignore_range_);
     private_nh_.getParam("expansion_limit", expansion_limit_);
@@ -77,7 +77,7 @@ void Localizer::odometry_callback(const nav_msgs::Odometry::ConstPtr& msg)
     }
 
     if(current_odometry_ != previous_odometry_)
-        start_ = true;
+        can_move_ = true;
 
     current_odometry_ = *msg;
 }
@@ -291,9 +291,9 @@ void Localizer::resampling()
     {
         if(new_particles.size() < num_replace_)
         {
-            double x = set_noise(estimated_pose_.get_pose_x(), adaptive_reset_dev_);
-            double y = set_noise(estimated_pose_.get_pose_y(), adaptive_reset_dev_);
-            double yaw = set_noise(estimated_pose_.get_pose_yaw(), adaptive_reset_dev_);
+            double x = set_noise(estimated_pose_.get_pose_x(), resampling_reset_dev_);
+            double y = set_noise(estimated_pose_.get_pose_y(), resampling_reset_dev_);
+            double yaw = set_noise(estimated_pose_.get_pose_yaw(), resampling_reset_dev_);
             Particle p(x, y, yaw);
             new_particles.push_back(p);
         }
@@ -367,7 +367,7 @@ void Localizer::process()
                 initialize();
                 init_request_ = false;
             }
-            if(start_)
+            if(can_move_)
             {
                 motion_update();
                 measurement_update();

@@ -14,7 +14,7 @@ motion_dev_per_dist: 0.25
 motion_dev_per_rot: 0.25
 laser_dev_per_dist: 0.10
 expansion_reset_dev: 0.02
-adaptive_reset_dev: 0.25
+resampling_reset_dev: 0.25
 
 laser_step: 30
 laser_ignore_range: 0.30
