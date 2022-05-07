@@ -192,12 +192,10 @@ double Localizer::calc_weight(Particle& p)
     {
         if(laser_.ranges[i] > laser_ignore_range_)
         {
+            double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), angle);
             double sigma = laser_.ranges[i] * laser_dev_per_dist_;
 
-            double laser_dist = set_noise(laser_.ranges[i], sigma);
-            double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), angle);
-
-            weight += likelihood(map_dist, laser_dist, sigma);
+            weight += likelihood(map_dist, laser_.ranges[i], sigma);
         }
 
         angle = optimize_angle(angle + angle_step * laser_step_);
