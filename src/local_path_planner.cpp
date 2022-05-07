@@ -23,6 +23,7 @@ DWA::DWA():private_nh_("~")
     private_nh_.getParam("dt", dt_);
     private_nh_.getParam("predict_time", predict_time_);
     private_nh_.getParam("roomba_radius", roomba_radius_);
+    private_nh_.getParam("radius_margin", radius_margin_);
     private_nh_.getParam("goal_tolerance", goal_tolerance_);
     private_nh_.getParam("search_range", search_range_);
     private_nh_.getParam("weight_heading", weight_heading_);
@@ -129,6 +130,12 @@ std::vector<double> DWA::calc_final_input()
     {
         for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
         {
+            if(velocity==0.0 && yawrate==0.0)
+            {
+                i++;
+                continue;
+            }
+
             const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
             const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
             trajectories.push_back(trajectory);
@@ -270,7 +277,7 @@ double DWA::calc_dist_eval(const std::vector<State>& traj)
             const double dist = hypot(dx, dy);
 
             // 壁に衝突したパスを評価
-            if(dist <= roomba_radius_)
+            if(dist <= roomba_radius_+radius_margin_)
                 return -1e6;
 
             // 最小値の更新

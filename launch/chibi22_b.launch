@@ -14,7 +14,7 @@
     <node pkg="chibi22_b" type="local_goal_creator" name="local_goal_creator"/>
     <node pkg="chibi22_b" type="local_map_creator" name="local_map_creator"/>
 
-    <node pkg="chibi22_b" type="localizer" name="localizer" output="screen" output="screen">
+    <node pkg="chibi22_b" type="localizer" name="localizer" output="screen">
         <rosparam command="load" file="$(arg localizer_settings)"/>
     </node>
     <node pkg="chibi22_b" type="local_path_planner" name="local_path_planner" output="screen">

@@ -1,33 +1,35 @@
 # パスを可視化するかの設定用
 is_visible: true
+# is_visible: false
 
 # 制御周波数
 hz: 10 # [Hz]
 
 # 速度制限
-max_vel: 0.3      # [m/s]
+max_vel: 0.5      # [m/s]
 min_vel: 0.0     # [m/s]
-max_yawrate: 0.6 # [rad/s]
+max_yawrate: 1.5 # [rad/s]
 
 # 加速度制限
 max_accel: 1000.0    # [m/s^2]
 max_dyawrate: 1000.0 # [rad/s^2]
 
 # 速度解像度
-vel_reso: 0.05    # [m/s]
+vel_reso: 0.1    # [m/s]
 yawrate_reso: 0.1 # [rad/s]
 
 # 時間 [s]
 dt: 0.1
-predict_time: 3.0
+predict_time: 1.5
 
-# 機体サイズ [m]
-roomba_radius: 0.25
+# 機体サイズ(半径) [m]
+roomba_radius: 0.17
+radius_margin: 0.08
 
 # 重み定数 [-]
-weight_heading: 0.2
-weight_dist: 0.3
-weight_vel: 1.0
+weight_heading: 0.45
+weight_dist: 0.6
+weight_vel: 0.25
 
 # 許容誤差 [m]
 goal_tolerance: 0.5
