@@ -82,7 +82,8 @@ private:
     double yawrate_reso_;   // 旋回速度解像度 [rad/s]
     double dt_;             // 微小時間 [s]
     double predict_time_;   // 軌跡予測時間 [s]
-    double roomba_radius_;  // Roombaのサイズ [m]（Roombaの中心から壁までの最小距離）
+    double roomba_radius_;  // Roombaのサイズ(半径) [m]
+    double radius_margin_;  // 半径の余白 [m]
     double goal_tolerance_; // 目標地点の許容誤差 [m]
     double search_range_;   // 評価関数distで探索する範囲 [m]
 
