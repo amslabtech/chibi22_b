@@ -7,12 +7,12 @@ hz: 10 # [Hz]
 
 # 速度制限
 # max_vel: 0.35      # [m/s]
-max_vel1: 0.34      # [m/s]（平常時）
+max_vel1: 0.33      # [m/s]（平常時）
 max_vel2: 0.28      # [m/s]（旋回時）
 turn_threshold: 0.25 # [m/s]
 
 min_vel: 0.0     # [m/s]
-max_yawrate: 0.6 # [rad/s]
+max_yawrate: 1.0 # [rad/s]
 # max_vel: 0.4      # [m/s]
 # min_vel: 0.0     # [m/s]
 # max_yawrate: 3.0 # [rad/s]
@@ -38,9 +38,9 @@ radius_margin: 0.1
 # radius_margin: 0.05
 
 # 重み定数 [-]
-weight_heading: 0.9
-weight_dist: 0.5
-weight_vel: 0.4
+weight_heading: 0.7
+weight_dist: 0.65
+weight_vel: 1.0
 
 # 許容誤差 [m]
 goal_tolerance: 0.5

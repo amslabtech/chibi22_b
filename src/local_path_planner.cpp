@@ -148,7 +148,7 @@ std::vector<double> DWA::calc_final_input()
             {
                 continue;
             }
-            else if(0.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_)
+            else if(0.0 < abs(yawrate) && abs(yawrate)<=2*yawrate_reso_)
             {
                 continue;
             }
