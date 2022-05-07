@@ -15,7 +15,7 @@ private:
     int row_;                                               //元データ
     int column_;                                            //元データの列
     int hz_;                                                //更新周期
-    bool map_check_;
+    bool map_check_;                                        //nodeの停止のためのbool
 // ----関数----
     void callback(const nav_msgs::OccupancyGrid::ConstPtr&);//callback関数
     void map2array();                                       //map情報を二次元配列へ格納する関数
