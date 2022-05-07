@@ -407,7 +407,10 @@ void AStar::process()
             path_checker_ = true;
         }
         if(path_checker_)
+        {
+            std::cout << "complete Global Path Planner!" << std::endl;
             exit(0);
+        }
         ros::spinOnce();
         loop_rate.sleep();
     }
