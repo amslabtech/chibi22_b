@@ -5,6 +5,8 @@ Global_Map_Inflater::Global_Map_Inflater():private_nh("~"),nh("")
     private_nh.param("hz_",hz_,{1});
     private_nh.param("row_",row_,{4409});                                      //マップの行数は適宜設定する
     private_nh.param("column_",column_,{4409});                                //マップの列数は適宜設定する
+    private_nh.param("map_check",map_check_,{false});
+     //マップが送られたかのbool
     update_map = nh.advertise<nav_msgs::OccupancyGrid>("/new_map",1);          //更新したマップをpublish(出版)するノード
     original_map = nh.subscribe("/map",10,&Global_Map_Inflater::callback,this);//元のマップをsubscribe(購読)するノード
 }
@@ -99,6 +101,7 @@ void Global_Map_Inflater::remap()//配列からメッセージとして送信す
     {
       std::cout<<"new map export NO"<<std::endl;
     }
+    map_check_ = true;
 
 }
 
@@ -112,6 +115,13 @@ void Global_Map_Inflater::process()//プロセス関数
     {
         ros::spinOnce();
         loop_rate.sleep();
+
+        if(map_check_)
+        {
+            std::cout<<"finish map make"<<std::endl;
+            exit(0);
+        }
+
     }
 }
 
