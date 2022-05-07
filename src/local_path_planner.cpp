@@ -13,7 +13,9 @@ DWA::DWA():private_nh_("~")
     // パラメータの取得
     private_nh_.getParam("is_visible", is_visible_);
     private_nh_.getParam("hz", hz_);
-    private_nh_.getParam("max_vel", max_vel_);
+    private_nh_.getParam("max_vel1", max_vel1_);
+    private_nh_.getParam("max_vel2", max_vel2_);
+    private_nh_.getParam("turn_threshold", turn_threshold_);
     private_nh_.getParam("min_vel", min_vel_);
     private_nh_.getParam("max_yawrate", max_yawrate_);
     private_nh_.getParam("max_accel", max_accel_);
@@ -121,6 +123,16 @@ std::vector<double> DWA::calc_final_input()
     double max_score = -1e6;                      // 評価値の最大値格納用
     int index_of_max_score = 0;                   // 評価値の最大値に対する軌跡のインデックス格納用
 
+    // 旋回状況に応じた減速機能
+    if(roomba_.velocity < turn_threshold_)
+    {
+        max_vel_ = max_vel1_;
+    }
+    else
+    {
+        max_vel_ = max_vel2_;
+    }
+
     // ダイナミックウィンドウを計算
     calc_dynamic_window();
 
@@ -130,12 +142,13 @@ std::vector<double> DWA::calc_final_input()
     {
         for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
         {
-            if((velocity==0.0) && (-yawrate_reso_<=yawrate && yawrate<=yawrate_reso_))
-            // if((velocity==0.0) && (yawrate==0.0))
+
+            if(velocity==0.0 && abs(yawrate)<=yawrate_reso_)
+            // if(velocity==0.0 && yawrate==0.0)
             {
                 continue;
             }
-            else if((-yawrate_reso_<=yawrate && yawrate <0.0) || (0.0 < yawrate && yawrate<=yawrate_reso_))
+            else if(0.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_)
             {
                 continue;
             }

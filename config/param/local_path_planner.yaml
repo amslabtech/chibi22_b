@@ -6,7 +6,11 @@ is_visible: true
 hz: 10 # [Hz]
 
 # 速度制限
-max_vel: 0.35      # [m/s]
+# max_vel: 0.35      # [m/s]
+max_vel1: 0.34      # [m/s]（平常時）
+max_vel2: 0.28      # [m/s]（旋回時）
+turn_threshold: 0.25 # [m/s]
+
 min_vel: 0.0     # [m/s]
 max_yawrate: 0.6 # [rad/s]
 # max_vel: 0.4      # [m/s]
