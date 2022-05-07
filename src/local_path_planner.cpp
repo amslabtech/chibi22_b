@@ -124,14 +124,10 @@ std::vector<double> DWA::calc_final_input()
     int index_of_max_score = 0;                   // 評価値の最大値に対する軌跡のインデックス格納用
 
     // 旋回状況に応じた減速機能
-    if(roomba_.velocity < turn_threshold_)
-    {
+    if(abs(roomba_.yawrate) < turn_threshold_)
         max_vel_ = max_vel1_;
-    }
     else
-    {
         max_vel_ = max_vel2_;
-    }
 
     // ダイナミックウィンドウを計算
     calc_dynamic_window();
@@ -144,14 +140,9 @@ std::vector<double> DWA::calc_final_input()
         {
 
             if(velocity==0.0 && abs(yawrate)<=yawrate_reso_)
-            // if(velocity==0.0 && yawrate==0.0)
-            {
                 continue;
-            }
-            else if(0.0 < abs(yawrate) && abs(yawrate)<=2*yawrate_reso_)
-            {
+            else if(0.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_)
                 continue;
-            }
 
             const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
             const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
@@ -171,7 +162,7 @@ std::vector<double> DWA::calc_final_input()
 
     // 現在速度の記録
     roomba_.velocity = input[0];
-    roomba_.yawrate = input[1];
+    roomba_.yawrate  = input[1];
 
     // pathの可視化
     if(is_visible_)
