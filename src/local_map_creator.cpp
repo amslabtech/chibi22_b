@@ -66,15 +66,33 @@ bool LocalMapCreator::is_map_range_checker(double x, double y)
 
 bool LocalMapCreator::is_ignore_angle_checker(double angle)
 {
-    angle = abs(angle);
-
-    if((angle > M_PI * 2/16) && (angle < M_PI * 5/16)) {
+    // left
+    if((angle < M_PI * - 1.2/16) && (angle > M_PI * - 5/16))
+    {
         return false;
-    } else if(angle > M_PI * 11/16) {
+    }
+    // right
+    if((angle > M_PI * 3/16) && (angle < M_PI * 5/16))
+    {
+        return false;
+    }
+
+    angle = abs(angle);
+    if(angle > M_PI * 11/16) {
         return false;
     } else {
         return true;
     }
+
+
+    // angle = abs(angle);
+    // if((angle > M_PI * 2/16) && (angle < M_PI * 5/16)) {
+    //     return false;
+    // } else if(angle > M_PI * 11/16) {
+    //     return false;
+    // } else {
+    //     return true;
+    // }
 }
 
 bool LocalMapCreator::is_range_checker(double laser_range)
@@ -88,7 +106,10 @@ bool LocalMapCreator::is_range_checker(double laser_range)
 
 void LocalMapCreator::create_line(double angle, double laser_range)
 {
-    if(!is_range_checker(laser_range) || (!is_ignore_angle_checker(angle))) {
+    // if(!is_range_checker(laser_range) || (!is_ignore_angle_checker(angle))) {
+    //     laser_range = map_size_;
+    // }
+    if(!is_ignore_angle_checker(angle)) {
         laser_range = map_size_;
     }
 

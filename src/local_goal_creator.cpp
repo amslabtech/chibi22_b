@@ -4,7 +4,7 @@ LocalGoalCreator::LocalGoalCreator():private_nh_("~")
 {
     private_nh_.param("hz_", hz_, {10});
     private_nh_.param("goal_index_", goal_index_, {50});
-    private_nh_.param("local_goal_dist_", local_goal_dist_, {2.0});
+    private_nh_.param("local_goal_dist_", local_goal_dist_, {2.5});
 
     global_path_sub_ = nh_.subscribe("/global_path", 1, &LocalGoalCreator::global_path_callback, this);
     current_pose_sub_ = nh_.subscribe("/estimated_pose", 10, &LocalGoalCreator::current_pose_callback, this);

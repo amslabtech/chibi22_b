@@ -130,9 +130,13 @@ std::vector<double> DWA::calc_final_input()
     {
         for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
         {
-            if(velocity==0.0 && yawrate==0.0)
+            if((velocity==0.0) && (-yawrate_reso_<=yawrate && yawrate<=yawrate_reso_))
+            // if((velocity==0.0) && (yawrate==0.0))
             {
-                i++;
+                continue;
+            }
+            else if((-yawrate_reso_<=yawrate && yawrate <0.0) || (0.0 < yawrate && yawrate<=yawrate_reso_))
+            {
                 continue;
             }
 

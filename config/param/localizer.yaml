@@ -7,7 +7,7 @@ num: 300
 #初めにばらまくパーティクルの位置姿勢
 init_x: 0.0
 init_y: 0.0
-init_yaw: 0.0
+init_yaw: 0.06
 #ノイズを乗せるばらつき
 init_dev: 0.50
 motion_dev_per_dist: 0.25
