@@ -15,9 +15,12 @@ DWA::DWA():private_nh_("~")
     private_nh_.getParam("hz", hz_);
     private_nh_.getParam("max_vel1", max_vel1_);
     private_nh_.getParam("max_vel2", max_vel2_);
-    private_nh_.getParam("turn_threshold", turn_threshold_);
+    private_nh_.getParam("avoid_thres_vel", avoid_thres_vel_);
     private_nh_.getParam("min_vel", min_vel_);
-    private_nh_.getParam("max_yawrate", max_yawrate_);
+    private_nh_.getParam("max_yawrate1", max_yawrate1_);
+    private_nh_.getParam("max_yawrate2", max_yawrate2_);
+    private_nh_.getParam("turn_thres_yawrate", turn_thres_yawrate_);
+    private_nh_.getParam("mode_log_time", mode_log_time_);
     private_nh_.getParam("max_accel", max_accel_);
     private_nh_.getParam("max_dyawrate", max_dyawrate_);
     private_nh_.getParam("vel_reso", vel_reso_);
@@ -25,11 +28,14 @@ DWA::DWA():private_nh_("~")
     private_nh_.getParam("dt", dt_);
     private_nh_.getParam("predict_time", predict_time_);
     private_nh_.getParam("roomba_radius", roomba_radius_);
-    private_nh_.getParam("radius_margin", radius_margin_);
+    private_nh_.getParam("radius_margin1", radius_margin1_);
+    private_nh_.getParam("radius_margin2", radius_margin2_);
     private_nh_.getParam("goal_tolerance", goal_tolerance_);
     private_nh_.getParam("search_range", search_range_);
-    private_nh_.getParam("weight_heading", weight_heading_);
-    private_nh_.getParam("weight_dist", weight_dist_);
+    private_nh_.getParam("weight_heading1", weight_heading1_);
+    private_nh_.getParam("weight_heading2", weight_heading2_);
+    private_nh_.getParam("weight_dist1", weight_dist1_);
+    private_nh_.getParam("weight_dist2", weight_dist2_);
     private_nh_.getParam("weight_vel", weight_vel_);
 
     // Subscriber
@@ -124,10 +130,7 @@ std::vector<double> DWA::calc_final_input()
     int index_of_max_score = 0;                   // 評価値の最大値に対する軌跡のインデックス格納用
 
     // 旋回状況に応じた減速機能
-    if(abs(roomba_.yawrate) < turn_threshold_)
-        max_vel_ = max_vel1_;
-    else
-        max_vel_ = max_vel2_;
+    change_mode();
 
     // ダイナミックウィンドウを計算
     calc_dynamic_window();
@@ -139,9 +142,9 @@ std::vector<double> DWA::calc_final_input()
         for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
         {
 
-            if(velocity==0.0 && abs(yawrate)<=yawrate_reso_)
+            if(velocity<vel_reso_/2.0 && abs(yawrate)<yawrate_reso_*3.0/2.0)
                 continue;
-            else if(0.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_)
+            else if(yawrate_reso_/2.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_*3.0/2.0 && mode==1)
                 continue;
 
             const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
@@ -178,6 +181,50 @@ std::vector<double> DWA::calc_final_input()
     }
 
     return input;
+}
+
+// 旋回状況に応じた減速機能
+void DWA::change_mode()
+{
+    if(abs(roomba_.yawrate)>turn_thres_yawrate_ || roomba_.velocity<avoid_thres_vel_)
+        mode_log_.push_back(2.0);
+    else
+        mode_log_.push_back(1.0);
+
+    if(mode_log_.size() > hz_*mode_log_time_)
+        mode_log_.erase(mode_log_.begin());
+
+    double mode_sum = 0.0;
+    // std::cout << "[";
+    for(const auto& mode : mode_log_)
+    {
+        mode_sum += mode;
+        // std::cout << mode << ", ";
+    }
+    // std::cout << "]" << std::endl;
+
+    double mode_avg = mode_sum/mode_log_.size();
+
+    if(mode_avg < 1.5) // 平常時
+    {
+        mode_          = 1;
+        max_vel_        = max_vel1_;
+        max_yawrate_    = max_yawrate1_;
+        radius_margin_  = radius_margin1_;
+        weight_heading_ = weight_heading1_;
+        weight_dist_    = weight_dist1_;
+        // std::cout << "減速OFF" << std::endl;
+    }
+    else // 減速時
+    {
+        mode_          = 2;
+        max_vel_        = max_vel2_;
+        max_yawrate_    = max_yawrate2_;
+        radius_margin_  = radius_margin2_;
+        weight_heading_ = weight_heading2_;
+        weight_dist_    = weight_dist2_;
+        // std::cout << "減速ON" << std::endl;
+    }
 }
 
 // Dynamic Windowを計算

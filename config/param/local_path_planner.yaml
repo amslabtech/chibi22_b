@@ -6,11 +6,14 @@ is_visible: true
 hz: 10 # [Hz]
 
 # 速度制限
-max_vel1: 0.50       # [m/s]（平常時）
-max_vel2: 0.3        # [m/s]（旋回時）
-turn_threshold: 0.25 # [m/s]
-min_vel: 0.0         # [m/s]
-max_yawrate: 1.0     # [rad/s]
+max_vel1: 0.50            # [m/s]（平常時）
+max_vel2: 0.3             # [m/s]（減速時）
+avoid_thres_vel: 0.17     # [m/s]（回避中か判断する閾値）
+min_vel: 0.0              # [m/s]
+max_yawrate1: 1.0         # [rad/s]（平常時）
+max_yawrate2: 0.6         # [rad/s]（減速時）
+turn_thres_yawrate: 0.25  # [rad/s]（旋回中か判断する閾値）
+mode_log_time: 2.0
 
 # 加速度制限
 max_accel: 1000.0    # [m/s^2]
@@ -26,11 +29,14 @@ predict_time: 3.0
 
 # 機体サイズ(半径) [m]
 roomba_radius: 0.17
-radius_margin: 0.1
+radius_margin1: 0.1  #（平常時）
+radius_margin2: 0.08 #（減速時）
 
 # 重み定数 [-]
-weight_heading: 0.7
-weight_dist: 0.65
+weight_heading1: 0.7 #（平常時）
+weight_heading2: 0.2 #（減速時）
+weight_dist1: 0.65   #（平常時）
+weight_dist2: 0.3    #（減速時）
 weight_vel: 1.0
 
 # 許容誤差 [m]
