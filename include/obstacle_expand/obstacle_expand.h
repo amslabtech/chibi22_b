@@ -1,13 +1,13 @@
-#ifndef GLOBAL_MAP_INFLATER_H
-#define GLOBAL_MAP_INFLATER_H
+#ifndef OBSTACLE_EXPAND_H
+#define OBSTACLE_EXPAND_H
 #include<ros/ros.h>
 #include "nav_msgs/OccupancyGrid.h"
 
 // ====クラス====
-class Global_Map_Inflater
+class Obstacle_Expand
 {
 public:
-    Global_Map_Inflater();                                  //デフォルトコンストラクタ
+    Obstacle_Expand();                                  //デフォルトコンストラクタ
     void process();
 
 private:

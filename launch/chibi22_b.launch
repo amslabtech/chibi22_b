@@ -9,7 +9,7 @@
 
     <!-- node launch -->
     <node pkg="chibi22_b" type="global_path_planner" name="global_path_planner"/>
-    <node pkg="chibi22_b" type="global_map_inflater" name="global_map_inflater"/>
+    <node pkg="chibi22_b" type="obstacle_expand" name="obstacle_expand"/>
     <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" output="screen"/>
     <node pkg="chibi22_b" type="local_goal_creator" name="local_goal_creator">
         <param  name="local_goal_dist" value="2.15"/>

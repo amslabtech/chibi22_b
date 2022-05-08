@@ -1,6 +1,6 @@
-#include "global_map_inflater/global_map_inflater.h"
+#include "obstacle_expand/obstacle_expand.h"
 
-Global_Map_Inflater::Global_Map_Inflater():private_nh("~"),nh("")
+Obstacle_Expand::Obstacle_Expand():private_nh("~"),nh("")
 {
     private_nh.param("hz_",hz_,{1});
     private_nh.param("row_",row_,{4409});                                      //マップの行数は適宜設定する
@@ -8,10 +8,10 @@ Global_Map_Inflater::Global_Map_Inflater():private_nh("~"),nh("")
     private_nh.param("map_check",map_check_,{false});
      //マップが送られたかのbool
     update_map = nh.advertise<nav_msgs::OccupancyGrid>("/new_map",1);          //更新したマップをpublish(出版)するノード
-    original_map = nh.subscribe("/map",10,&Global_Map_Inflater::callback,this);//元のマップをsubscribe(購読)するノード
+    original_map = nh.subscribe("/map",10,&Obstacle_Expand::callback,this);//元のマップをsubscribe(購読)するノード
 }
 
-void Global_Map_Inflater::callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)//callback関数
+void Obstacle_Expand::callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)//callback関数
 {
     std::cout<<"callback starts"<<std::endl;
     ROS_INFO("receved original map");
@@ -25,7 +25,7 @@ void Global_Map_Inflater::callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     ROS_INFO("sended new_map");
 }
 
-void Global_Map_Inflater::map2array()//マップ情報を配列へ格納する関数
+void Obstacle_Expand::map2array()//マップ情報を配列へ格納する関数
 {
     std::cout<<"map2array starts"<<std::endl;
     if(origin_map.data.size() != 0)//map情報が入っているかの確認
@@ -56,7 +56,7 @@ void Global_Map_Inflater::map2array()//マップ情報を配列へ格納する�
     }
 }
 
-void Global_Map_Inflater::obstacle_expand()//マップの障害物を拡大する
+void Obstacle_Expand::obstacle_expand()//マップの障害物を拡大する
 {
     std::cout<<"Obstacle expand starts"<<std::endl;
 
@@ -78,7 +78,7 @@ void Global_Map_Inflater::obstacle_expand()//マップの障害物を拡大す�
     }
 }
 
-void Global_Map_Inflater::remap()//配列からメッセージとして送信する関数
+void Obstacle_Expand::remap()//配列からメッセージとして送信する関数
 {
     std::cout<<"remap starts"<<std::endl;
     new_map.header = origin_map.header;
@@ -105,7 +105,7 @@ void Global_Map_Inflater::remap()//配列からメッセージとして送信す
 
 }
 
-void Global_Map_Inflater::process()//プロセス関数
+void Obstacle_Expand::process()//プロセス関数
 {
     grid_map = std::vector<std::vector<int>>(row_, std::vector<int>(column_,0));//配列の初期化
     copy_grid_map = std::vector<std::vector<int>>(row_, std::vector<int>(column_,0));
@@ -127,9 +127,9 @@ void Global_Map_Inflater::process()//プロセス関数
 
 int main(int argc, char **argv)
 {
-    ros::init(argc,argv,"global_map_inflater");
-    Global_Map_Inflater global_map_inflater;
-    std::cout<<"global_map_inflater starts"<<std::endl;
-    global_map_inflater.process();
+    ros::init(argc,argv,"obstacle_expand");
+    Obstacle_Expand obstacle_expand;
+    std::cout<<"obstacle_expand starts"<<std::endl;
+    obstacle_expand.process();
     return 0;
 }
