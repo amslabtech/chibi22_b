@@ -31,6 +31,8 @@ class LocalMapCreator
         double map_reso_;
         double roomba_radius_;
         bool flag_map_view_;
+        bool flag_pose_callback_;
+        bool flag_odo_callback_;
 
         bool is_laser_checker_ = false;
         bool is_first_pose_checker_ = false;

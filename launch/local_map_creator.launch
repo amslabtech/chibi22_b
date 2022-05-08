@@ -1,10 +1,16 @@
 <?xml version = "1.0"?>
 <launch>
     <node pkg = "chibi22_test" name = "local_map_creator" type = "local_map_creator" output="screen">
-        <param name = "hz_" type = "int" value = "10"/>
-        <param name = "map_size_" type = "double" value = "4"/>
-        <param name = "map_reso_" type = "double" value = "0.05"/>
-        <param name = "roomba_radius_" type = "double" value = "0.2"/>
+        <param name = "hz" type = "int" value = "10"/>
+        <param name = "map_size" type = "double" value = "4"/>
+        <param name = "map_reso" type = "double" value = "0.05"/>
+        <param name = "roomba_radius" type = "double" value = "0.2"/>
+        <!-- <param name = "flag_map_view" type = "bool" value = "true"/> -->
+        <param name = "flag_map_view" type = "bool" value = "false"/>
+        <param name = "flag_pose_callback" type = "bool" value = "true"/>
+        <!-- <param name = "flag_pose_callback" type = "bool" value = "false"/> -->
+        <param name = "flag_odo_callback" type = "bool" value = "true"/>
+        <!-- <param name = "flag_odo_callback" type = "bool" value = "false"/> -->
     </node>
     <!-- <node pkg = "roomba_500driver_meiji" name = "roomba_500driver_meiji" type = "main500"/> -->
 </launch>
