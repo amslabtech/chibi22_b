@@ -3,28 +3,28 @@ hz: 10
 
 #初期化時の値
 #パーティクル数
-num: 2000
+num: 1500
 #初めにばらまくパーティクルの位置姿勢
 init_x: 0.0
 init_y: 0.0
-init_yaw: 0.06
+init_yaw: 0.0
 #ノイズを乗せるばらつき
-init_dev: 0.50
-motion_dev_per_dist: 0.25
-motion_dev_per_rot: 0.25
-laser_dev_per_dist: 0.10
-expansion_reset_dev: 0.02
-resampling_reset_dev: 0.25
+init_dev: 0.40              # 初期位置のばらつき
+motion_dev_per_dist: 0.25   # 1m の並進に対する距離のばらつき (m)
+motion_dev_per_rot: 0.25    # 1rad 回転に対する角度のばらつき (rad)
+laser_dev_per_dist: 0.10    # レーザ 1m に対する距離のばらつき (m)
+expansion_reset_dev: 0.02   # 膨張リセット時のばらつき
+resampling_reset_dev: 0.25  # リサンプリング時にかけるリセットのばらつき
+#観測更新時のパラメータ
+laser_step: 20              # 参照するレーザの間隔
+laser_ignore_range: 0.20    # 参照から除外するレーザの距離 (m)
 
-laser_step: 30
-laser_ignore_range: 0.30
+search_loop_limit: 15       # マップの測距処理のループ上限
 
-search_loop_limit: 15
-
-expansion_limit: 10
-alpha_th: 0.60
-alpha_slow_th: 0.001
-alpha_fast_th: 0.1
-
-use_new_dist_on_map: true
-is_visible: true
+expansion_limit: 30         # 膨張リセットの連続回数上限
+alpha_th: 0.80              # 膨張リセットを発動する全体尤度の閾値
+alpha_slow_th: 0.001        # リサンプリングリセットを発動する閾値
+alpha_fast_th: 0.1          # slow, fast の差が小さいほど発動しやすい
+#関数実行の有無
+use_new_dist_on_map: true   # 新しい測距関数を使うか
+is_visible: true            # rviz にパーティクル群を表示するか
