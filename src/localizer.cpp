@@ -45,12 +45,12 @@ Localizer::Localizer():private_nh_("~")
     private_nh_.getParam("resampling_reset_dev", resampling_reset_dev_);
     private_nh_.getParam("laser_step", laser_step_);
     private_nh_.getParam("laser_ignore_range", laser_ignore_range_);
+    private_nh_.getParam("search_loop_limit", search_loop_limit_);
     private_nh_.getParam("expansion_limit", expansion_limit_);
     private_nh_.getParam("alpha_th", alpha_th_);
     private_nh_.getParam("alpha_slow_th", alpha_slow_th_);
     private_nh_.getParam("alpha_fast_th", alpha_fast_th_);
     private_nh_.getParam("is_visible", is_visible_);
-
 
     // Subscriber
     sub_laser_ = nh_.subscribe("/scan", 10, &Localizer::laser_callback, this);
@@ -183,7 +183,6 @@ void Localizer::measurement_update()
 double Localizer::calc_weight(Particle& p)
 {
     double weight = 0.0;
-
     double angle = optimize_angle(p.get_pose_yaw() + laser_.angle_min);
     double angle_step = laser_.angle_increment;
     int limit = laser_.ranges.size();
@@ -192,7 +191,8 @@ double Localizer::calc_weight(Particle& p)
     {
         if(laser_.ranges[i] > laser_ignore_range_)
         {
-            double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), angle);
+            // double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), angle);
+            double map_dist = new_dist_on_map(p.get_pose_x(), p.get_pose_y(), laser_.ranges[i], angle);
             double sigma = laser_.ranges[i] * laser_dev_per_dist_;
 
             weight += likelihood(map_dist, laser_.ranges[i], sigma);
@@ -225,6 +225,40 @@ double Localizer::dist_on_map(double map_x, double map_y, double laser_angle)
         if(map_occupancy != 0)    return distance;
     }
     return search_limit;
+}
+
+double Localizer::new_dist_on_map(double map_x, double map_y, double laser_dist,double laser_angle)
+{
+    double distance = 0.0;
+    double dist_x = map_x + laser_dist * cos(laser_angle);
+    double dist_y = map_y + laser_dist * sin(laser_angle);
+    double delta_min = map_.info.resolution;
+    double delta = std::max(delta_min, laser_dist);
+    int prev_occ = get_map_occupancy(map_x, map_y);
+
+    for(int i=0; i <= search_loop_limit_; i++)
+    {
+        distance = hypot(dist_x - map_x, dist_y - map_y);
+        int curt_occ = get_map_occupancy(dist_x, dist_y);
+
+        if(curt_occ == -1)
+        {
+            dist_x -= delta * cos(laser_angle);
+            dist_y -= delta * sin(laser_angle);
+        }
+        else if(curt_occ == 0)
+        {
+            dist_x += delta * cos(laser_angle);
+            dist_y += delta * sin(laser_angle);
+        }
+
+        if(curt_occ == 100 || (delta == delta_min && curt_occ != prev_occ) )    break;
+
+        delta = std::max(delta_min, delta / 2.0);
+        prev_occ = curt_occ;
+    }
+
+    return distance;
 }
 
 int Localizer::get_map_occupancy(double x, double y)

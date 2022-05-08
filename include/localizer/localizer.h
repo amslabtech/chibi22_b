@@ -63,7 +63,8 @@ private:
     double calc_weight(Particle& p);
     void normalize_weight();
     double likelihood(double x,double mu,double dev);
-    double dist_on_map(double map_x,double map_y,double lasor_angle);
+    double dist_on_map(double map_x,double map_y,double laser_angle);
+    double new_dist_on_map(double map_x,double map_y,double laser_dist, double laser_angle);
     int get_map_occupancy(double x,double y);
     bool reset_request();
     void expansion_reset();
@@ -89,10 +90,12 @@ private:
     double resampling_reset_dev_;
     int laser_step_;
     double laser_ignore_range_;
+    int search_loop_limit_;
     int expansion_limit_;
     double alpha_th_;
     double alpha_slow_th_;
     double alpha_fast_th_;
+    bool use_new_dist_on_map_;
     bool is_visible_;
 
 

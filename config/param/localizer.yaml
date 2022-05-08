@@ -3,7 +3,7 @@ hz: 10
 
 #初期化時の値
 #パーティクル数
-num: 300
+num: 2000
 #初めにばらまくパーティクルの位置姿勢
 init_x: 0.0
 init_y: 0.0
@@ -19,9 +19,12 @@ resampling_reset_dev: 0.25
 laser_step: 30
 laser_ignore_range: 0.30
 
+search_loop_limit: 15
+
 expansion_limit: 10
-alpha_th: 0.50
+alpha_th: 0.60
 alpha_slow_th: 0.001
 alpha_fast_th: 0.1
 
-is_visible: false
+use_new_dist_on_map: true
+is_visible: true
