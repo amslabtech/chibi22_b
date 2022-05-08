@@ -1,6 +1,6 @@
-#include "local_map_creator/local_map_creator.h"
+#include "obstacle_detector/obstacle_detector.h"
 
-LocalMapCreator::LocalMapCreator():private_nh_("~")
+ObstacleDetector::ObstacleDetector():private_nh_("~")
 {
     private_nh_.param("hz", hz_, {10});
     private_nh_.param("map_size", map_size_, {4});
@@ -8,7 +8,7 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
     private_nh_.param("roomba_radius", roomba_radius_, {0.2});
     private_nh_.param("flag_map_view", flag_map_view_, {false});
 
-    laser_sub_ = nh_.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
+    laser_sub_ = nh_.subscribe("scan", 10, &ObstacleDetector::laser_callback, this);
     local_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("local_map", 10);
     obstacle_poses_pub_ = nh_.advertise<geometry_msgs::PoseArray>("/local_map/obstacle", 10);
 
@@ -23,7 +23,7 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
     // init_map();
 }
 
-void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
+void ObstacleDetector::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
 
     laser_ = *msg;
@@ -34,7 +34,7 @@ void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg
     is_laser_checker_ = true;
 }
 
-void LocalMapCreator::init_map()
+void ObstacleDetector::init_map()
 {
     local_map_.data.clear();
     int size = local_map_.info.width * local_map_.info.height;
@@ -43,7 +43,7 @@ void LocalMapCreator::init_map()
     }
 }
 
-int LocalMapCreator::xy_to_map_index(double x, double y)
+int ObstacleDetector::xy_to_map_index(double x, double y)
 {
     int x_index = (x - local_map_.info.origin.position.x) / map_reso_;
     int y_index = (y - local_map_.info.origin.position.y) / map_reso_;
@@ -51,7 +51,7 @@ int LocalMapCreator::xy_to_map_index(double x, double y)
     return x_index + y_index * local_map_.info.width;
 }
 
-bool LocalMapCreator::is_map_range_checker(double x, double y)
+bool ObstacleDetector::is_map_range_checker(double x, double y)
 {
     double x_min = local_map_.info.origin.position.x;
     double y_min = local_map_.info.origin.position.y;
@@ -65,7 +65,7 @@ bool LocalMapCreator::is_map_range_checker(double x, double y)
     }
 }
 
-bool LocalMapCreator::is_ignore_angle_checker(double angle)
+bool ObstacleDetector::is_ignore_angle_checker(double angle)
 {
     // left
     if((angle < M_PI * - 1.2/16) && (angle > M_PI * - 5/16))
@@ -96,7 +96,7 @@ bool LocalMapCreator::is_ignore_angle_checker(double angle)
     // }
 }
 
-bool LocalMapCreator::is_range_checker(double laser_range)
+bool ObstacleDetector::is_range_checker(double laser_range)
 {
     if(laser_range < roomba_radius_) {
         return false;
@@ -105,7 +105,7 @@ bool LocalMapCreator::is_range_checker(double laser_range)
     }
 }
 
-void LocalMapCreator::create_line(double angle, double laser_range)
+void ObstacleDetector::create_line(double angle, double laser_range)
 {
     // if(!is_range_checker(laser_range) || (!is_ignore_angle_checker(angle))) {
     //     laser_range = map_size_;
@@ -140,7 +140,7 @@ void LocalMapCreator::create_line(double angle, double laser_range)
     }
 }
 
-void LocalMapCreator::create_local_map()
+void ObstacleDetector::create_local_map()
 {
     obstacle_poses_.poses.clear();
     double angle_size = laser_.angle_max - laser_.angle_min;
@@ -152,7 +152,7 @@ void LocalMapCreator::create_local_map()
     }
 }
 
-void LocalMapCreator::process()
+void ObstacleDetector::process()
 {
     ros::Rate loop_rate(hz_);
     while(ros::ok()) {
@@ -170,8 +170,8 @@ void LocalMapCreator::process()
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "local_map_creator");
-    LocalMapCreator localmapcreator;
-    localmapcreator.process();
+    ObstacleDetector obstacledetector;
+    obstacledetector.process();
 
     return 0;
 }

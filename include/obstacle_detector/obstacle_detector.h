@@ -1,5 +1,5 @@
-#ifndef local_map_creator_H
-#define local_map_creator_H
+#ifndef obstacle_detector_H
+#define obstacle_detector_H
 
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
@@ -7,10 +7,10 @@
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose.h"
 
-class LocalMapCreator
+class ObstacleDetector
 {
     public:
-        LocalMapCreator();
+        ObstacleDetector();
         void process();
     private:
         void laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg);
