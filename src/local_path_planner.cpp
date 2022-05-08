@@ -144,7 +144,7 @@ std::vector<double> DWA::calc_final_input()
 
             if(velocity<vel_reso_/2.0 && abs(yawrate)<yawrate_reso_*3.0/2.0)
                 continue;
-            else if(yawrate_reso_/2.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_*3.0/2.0 && mode==1)
+            else if(yawrate_reso_/2.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_*3.0/2.0 && mode_==1)
                 continue;
 
             const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
@@ -195,13 +195,13 @@ void DWA::change_mode()
         mode_log_.erase(mode_log_.begin());
 
     double mode_sum = 0.0;
-    // std::cout << "[";
+    std::cout << "[";
     for(const auto& mode : mode_log_)
     {
         mode_sum += mode;
-        // std::cout << mode << ", ";
+        std::cout << mode << ", ";
     }
-    // std::cout << "]" << std::endl;
+    std::cout << "]" << std::endl;
 
     double mode_avg = mode_sum/mode_log_.size();
 
@@ -213,7 +213,7 @@ void DWA::change_mode()
         radius_margin_  = radius_margin1_;
         weight_heading_ = weight_heading1_;
         weight_dist_    = weight_dist1_;
-        // std::cout << "減速OFF" << std::endl;
+        std::cout << "減速OFF" << std::endl;
     }
     else // 減速時
     {
@@ -223,7 +223,7 @@ void DWA::change_mode()
         radius_margin_  = radius_margin2_;
         weight_heading_ = weight_heading2_;
         weight_dist_    = weight_dist2_;
-        // std::cout << "減速ON" << std::endl;
+        std::cout << "減速ON" << std::endl;
     }
 }
 

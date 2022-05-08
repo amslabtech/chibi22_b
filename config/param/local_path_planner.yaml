@@ -13,7 +13,8 @@ min_vel: 0.0              # [m/s]
 max_yawrate1: 1.0         # [rad/s]（平常時）
 max_yawrate2: 0.6         # [rad/s]（減速時）
 turn_thres_yawrate: 0.25  # [rad/s]（旋回中か判断する閾値）
-mode_log_time: 2.0
+mode_log_time: 1.3
+# mode_log_time: 2.0
 
 # 加速度制限
 max_accel: 1000.0    # [m/s^2]

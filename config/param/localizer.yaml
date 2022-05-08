@@ -3,6 +3,7 @@ hz: 10
 
 #初期化時の値
 #パーティクル数
+# num: 300
 num: 1500
 #初めにばらまくパーティクルの位置姿勢
 init_x: 0.0
@@ -27,4 +28,5 @@ alpha_slow_th: 0.001        # リサンプリングリセットを発動する�
 alpha_fast_th: 0.1          # slow, fast の差が小さいほど発動しやすい
 #関数実行の有無
 use_new_dist_on_map: true   # 新しい測距関数を使うか
-is_visible: true            # rviz にパーティクル群を表示するか
+is_visible: false            # rviz にパーティクル群を表示するか
+# is_visible: true            # rviz にパーティクル群を表示するか
