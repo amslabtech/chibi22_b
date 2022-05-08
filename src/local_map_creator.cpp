@@ -6,7 +6,7 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
     private_nh_.param("map_size", map_size_, {4});
     private_nh_.param("map_reso", map_reso_, {0.02});
     private_nh_.param("roomba_radius", roomba_radius_, {0.2});
-    private_nh_.param("flag_map_view", flag_map_view_);
+    private_nh_.param("flag_map_view", flag_map_view_, {false});
 
     laser_sub_ = nh_.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
     local_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("local_map", 10);
