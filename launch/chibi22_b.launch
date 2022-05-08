@@ -15,6 +15,7 @@
         <param  name="local_goal_dist_" value="2.15"/>
     </node>
     <node pkg="chibi22_b" type="local_map_creator" name="local_map_creator"/>
+        <param  name="flag_map_view_" value="true"/>
 
     <node pkg="chibi22_b" type="localizer" name="localizer" output="screen">
         <rosparam command="load" file="$(arg localizer_settings)"/>
