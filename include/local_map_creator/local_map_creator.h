@@ -32,7 +32,6 @@ class LocalMapCreator
         double map_size_;
         double map_reso_;
         double roomba_radius_;
-
         bool flag_map_view_;
         bool flag_pose_callback_;
         bool flag_odo_callback_;

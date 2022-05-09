@@ -12,7 +12,7 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
 
     laser_sub_ = nh_.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
     pose_sub_ = nh_.subscribe("/estimated_pose", 1, &LocalMapCreator::pose_callback, this);
-    odo_sub_ = nh_.subscribe("/roomba/odometry", 1, &LocalMapCreator::odo_callback, this);
+    odo_sub_ = nh_.subscribe("/roomba/odometry", 100, &LocalMapCreator::odo_callback, this);
     local_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("local_map_test", 10);
     obstacle_poses_pub_ = nh_.advertise<geometry_msgs::PoseArray>("/local_map/obstacle", 10);
 
@@ -29,13 +29,8 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
 //laserから情報を受け取る
 void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
-
     laser_ = *msg;
-
-    if(flag_map_view_)
-    {
-        init_map();
-    }
+    init_map();
     create_local_map();
     is_laser_checker_ = true;
 }
@@ -56,6 +51,10 @@ void LocalMapCreator::pose_callback(const geometry_msgs::PoseStamped::ConstPtr &
         }
         is_first_pose_checker_ = true;
     }
+    else
+    {
+        return;
+    }
 }
 
 void LocalMapCreator::odo_callback(const nav_msgs::Odometry::ConstPtr &msg)
@@ -72,6 +71,10 @@ void LocalMapCreator::odo_callback(const nav_msgs::Odometry::ConstPtr &msg)
             is_second_pose_checker_ = true;
         }
         is_first_pose_checker_ = true;
+    }
+    else
+    {
+        return;
     }
 }
 
@@ -189,6 +192,10 @@ void LocalMapCreator::create_line(double angle, double laser_range, bool first_m
             {
                 local_map_.data[map_index] = 100;
             }
+            // else
+            // {
+                // local_map_.data[map_index] = -1;
+            // }
             obstacle_pose_.position.x = x_now;
             obstacle_pose_.position.y = y_now;
             obstacle_poses_.poses.push_back(obstacle_pose_);
@@ -200,13 +207,17 @@ void LocalMapCreator::create_line(double angle, double laser_range, bool first_m
             {
                 local_map_.data[map_index] = 0;
             }
+            // else
+            // {
+                // local_map_.data[map_index] = -1;
+            // }
         }
     }
 }
 
 void LocalMapCreator::create_local_map()
 {
-    if(first_map_checker_ && is_second_pose_checker_)
+    if(is_second_pose_checker_)
     {
         if(flag_pose_callback_ || flag_odo_callback_)
         {
@@ -250,15 +261,14 @@ void LocalMapCreator::process()
     ros::Rate loop_rate(hz_);
     while(ros::ok())
     {
-        if(is_laser_checker_ && is_first_pose_checker_)
+        if(is_laser_checker_)
         {
             if(flag_map_view_)
             {
                 local_map_pub_.publish(local_map_);
-                std::cout << "publish!" << std::endl;
             }
             obstacle_poses_pub_.publish(obstacle_poses_);
-            first_map_checker_ = true;
+            // first_map_checker_ = true;
         }
         ros::spinOnce();
         loop_rate.sleep();
