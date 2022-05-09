@@ -20,7 +20,7 @@ class LocalMapCreator
         void laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg);
         void pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
         void odo_callback(const nav_msgs::Odometry::ConstPtr &msg);
-        void create_line(double angle, double laser_range, bool first_map_checker_);
+        void create_line(double angle, double laser_range);
         void create_local_map();
         void init_map();
         int xy_to_map_index(double x, double y);

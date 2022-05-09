@@ -15,12 +15,12 @@
         <param  name="local_goal_dist" value="2.15"/>
     </node>
     <node pkg="chibi22_b" type="local_map_creator" name="local_map_creator" output="screen">
-        <param name="flag_map_view" value="false"/>
-        <!-- <param name="flag_map_view" value="true"/> -->
-        <param name="flag_pose_callback" value="false"/>
-        <!-- <param name="flag_pose_callback" value="true"/> -->
-        <param name="flag_odo_callback" value="false"/>
-        <!-- <param name="flag_odo_callback" value="true"/> -->
+        <!-- <param name="flag_map_view" value="0"/> -->
+        <!-- &#60;&#33;&#45;&#45; <param name="flag_map_view" value="true"/> &#45;&#45;&#62; -->
+        <!-- <param name="flag_pose_callback" value="0"/> -->
+        <!-- &#60;&#33;&#45;&#45; <param name="flag_pose_callback" value="true"/> &#45;&#45;&#62; -->
+        <!-- <param name="flag_odo_callback" value="0"/> -->
+        <!-- &#60;&#33;&#45;&#45; <param name="flag_odo_callback" value="true"/> &#45;&#45;&#62; -->
     </node>
     <!-- <node pkg="chibi22_b" type="obstacle_detector" name="obstacle_detector"> -->
         <!-- <param name="flag_map_view" value="false"/> -->

@@ -6,9 +6,12 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
     private_nh_.param("map_size", map_size_, {4});
     private_nh_.param("map_reso", map_reso_, {0.02});
     private_nh_.param("roomba_radius", roomba_radius_, {0.2});
-    private_nh_.param("flag_map_view", flag_map_view_);
-    private_nh_.param("flag_pose_callback", flag_pose_callback_);
-    private_nh_.param("flag_odo_callback", flag_odo_callback_);
+    private_nh_.param("flag_map_view", flag_map_view_, {true});
+    // private_nh_.param("flag_map_view", flag_map_view_, {false});
+    private_nh_.param("flag_pose_callback", flag_pose_callback_, {true});
+    // private_nh_.param("flag_pose_callback", flag_pose_callback_, {false});
+    // private_nh_.param("flag_odo_callback", flag_odo_callback_, {true});
+    private_nh_.param("flag_odo_callback", flag_odo_callback_, {false});
 
     laser_sub_ = nh_.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
     pose_sub_ = nh_.subscribe("/estimated_pose", 1, &LocalMapCreator::pose_callback, this);
@@ -262,6 +265,10 @@ void LocalMapCreator::create_local_map()
 void LocalMapCreator::process()
 {
     ros::Rate loop_rate(hz_);
+
+    std::cout << "pose" << flag_pose_callback_ << std::endl;
+    std::cout << "map" << flag_map_view_  << std::endl;
+    std::cout << "odo" << flag_odo_callback_ << std::endl;
     while(ros::ok())
     {
         if(is_laser_checker_)
