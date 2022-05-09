@@ -35,7 +35,7 @@ radius_margin1: 0.1  #（平常時）
 radius_margin2: 0.04 #（減速時）
 
 # 重み定数 [-]
-weight_heading1: 0.8 #（平常時）
+weight_heading1: 0.85 #（平常時）
 weight_heading2: 0.2 #（減速時）
 weight_dist1: 1.5   #（平常時）
 weight_dist2: 0.8    #（減速時）

@@ -240,28 +240,33 @@ double Localizer::new_dist_on_map(double map_x, double map_y, double laser_dist,
     double dist_y = map_y + laser_dist * sin(laser_angle);
     double delta_min = map_.info.resolution;
     double delta = std::max(delta_min, laser_dist);
-    int prev_occ = get_map_occupancy(map_x, map_y);
 
-    for(int i=0; i <= search_loop_limit_; i++)
+    int curt_occ = get_map_occupancy(map_x, map_y);
+    int prev_occ = curt_occ;
+
+    if(curt_occ == 0)
     {
-        distance = hypot(dist_x - map_x, dist_y - map_y);
-        int curt_occ = get_map_occupancy(dist_x, dist_y);
-
-        if(curt_occ == -1)
+        for(int i=0; i <= search_loop_limit_; i++)
         {
-            dist_x -= delta * cos(laser_angle);
-            dist_y -= delta * sin(laser_angle);
-        }
-        else if(curt_occ == 0)
-        {
-            dist_x += delta * cos(laser_angle);
-            dist_y += delta * sin(laser_angle);
-        }
+            distance = hypot(dist_x - map_x, dist_y - map_y);
+            curt_occ = get_map_occupancy(dist_x, dist_y);
 
-        if(curt_occ == 100 || (delta == delta_min && curt_occ != prev_occ) )    break;
+            if(curt_occ == -1)
+            {
+                dist_x -= delta * cos(laser_angle);
+                dist_y -= delta * sin(laser_angle);
+            }
+            else if(curt_occ == 0)
+            {
+                dist_x += delta * cos(laser_angle);
+                dist_y += delta * sin(laser_angle);
+            }
 
-        delta = std::max(delta_min, delta / 2.0);
-        prev_occ = curt_occ;
+            if(curt_occ == 100 || (delta == delta_min && curt_occ != prev_occ) )    break;
+
+            delta = std::max(delta_min, delta / 2.0);
+            prev_occ = curt_occ;
+        }
     }
 
     return distance;

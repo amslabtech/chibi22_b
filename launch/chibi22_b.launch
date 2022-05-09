@@ -29,7 +29,7 @@
     <node pkg="chibi22_b" type="localizer" name="localizer" output="screen">
         <rosparam command="load" file="$(arg localizer_settings)"/>
     </node>
-    <node pkg="chibi22_b" type="local_path_planner" name="local_path_planner" output="screen">
+    <node pkg="chibi22_b" type="local_path_planner" name="local_path_planner">
         <rosparam command="load" file="$(arg local_path_planner_settings)"/>
     </node>
 

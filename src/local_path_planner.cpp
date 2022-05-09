@@ -147,7 +147,7 @@ std::vector<double> DWA::calc_final_input()
                 continue;
             else if(yawrate_reso_*0.5 < yawrate && yawrate<=yawrate_reso_*1.5 && mode_==1)
                 continue;
-            else if(-yawrate_reso_*4.5 < yawrate && yawrate<=-yawrate_reso_*0.5 && mode_==1)
+            else if(-yawrate_reso_*5.5 < yawrate && yawrate<=-yawrate_reso_*0.5 && mode_==1)
                 continue;
 
             const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
