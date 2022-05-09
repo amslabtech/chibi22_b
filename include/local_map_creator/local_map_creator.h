@@ -3,6 +3,7 @@
 
 #include "ros/ros.h"
 #include "tf2/utils.h"
+#include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "nav_msgs/Odometry.h"
@@ -18,6 +19,7 @@ class LocalMapCreator
     private:
         void laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg);
         void pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+        void odo_callback(const nav_msgs::Odometry::ConstPtr &msg);
         void create_line(double angle, double laser_range, bool first_map_checker_);
         void create_local_map();
         void init_map();
@@ -30,10 +32,14 @@ class LocalMapCreator
         double map_size_;
         double map_reso_;
         double roomba_radius_;
+
         bool flag_map_view_;
         bool flag_pose_callback_;
         bool flag_odo_callback_;
 
+        // bool flag_map_view_ = false;
+        // bool flag_pose_callback_ = false;
+        // bool flag_odo_callback_ = false;
         bool is_laser_checker_ = false;
         bool is_first_pose_checker_ = false;
         bool is_second_pose_checker_ = false;
@@ -44,6 +50,7 @@ class LocalMapCreator
 
         ros::Subscriber laser_sub_;
         ros::Subscriber pose_sub_;
+        ros::Subscriber odo_sub_;
         ros::Publisher local_map_pub_;
         ros::Publisher obstacle_poses_pub_;
 

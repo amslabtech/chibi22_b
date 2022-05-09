@@ -12,6 +12,7 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
 
     laser_sub_ = nh_.subscribe("scan", 10, &LocalMapCreator::laser_callback, this);
     pose_sub_ = nh_.subscribe("/estimated_pose", 1, &LocalMapCreator::pose_callback, this);
+    odo_sub_ = nh_.subscribe("/roomba/odometry", 1, &LocalMapCreator::odo_callback, this);
     local_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("local_map_test", 10);
     obstacle_poses_pub_ = nh_.advertise<geometry_msgs::PoseArray>("/local_map/obstacle", 10);
 
@@ -42,32 +43,36 @@ void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg
 //現在位置を受け取り、マップのずれを計測する
 void LocalMapCreator::pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-    current_pose_ = *msg;
-
-    //推定位置補間
     if(flag_pose_callback_)
     {
+        current_pose_ = *msg;
         diff_.position.x = current_pose_.pose.position.x - previous_pose_.position.x;
         diff_.position.y = current_pose_.pose.position.y - previous_pose_.position.y;
         previous_pose_ = current_pose_.pose;
-    }
 
-    //Odometry補間
+        if(is_first_pose_checker_)
+        {
+            is_second_pose_checker_ = true;
+        }
+        is_first_pose_checker_ = true;
+    }
+}
+
+void LocalMapCreator::odo_callback(const nav_msgs::Odometry::ConstPtr &msg)
+{
     if(flag_odo_callback_)
     {
-        current_odo_.pose.pose.position.x = current_pose_.pose.position.x;
-        current_odo_.pose.pose.position.y = current_pose_.pose.position.y;
-
+        current_odo_ = *msg;
         diff_.position.x = current_odo_.pose.pose.position.x - previous_odo_.pose.pose.position.x;
         diff_.position.y = current_odo_.pose.pose.position.y - previous_odo_.pose.pose.position.y;
         previous_odo_ = current_odo_;
-    }
 
-    if(is_first_pose_checker_)
-    {
-        is_second_pose_checker_ = true;
+        if(is_first_pose_checker_)
+        {
+            is_second_pose_checker_ = true;
+        }
+        is_first_pose_checker_ = true;
     }
-    is_first_pose_checker_ = true;
 }
 
 //マップの初期化(全領域を未知にする関数)
@@ -250,6 +255,7 @@ void LocalMapCreator::process()
             if(flag_map_view_)
             {
                 local_map_pub_.publish(local_map_);
+                std::cout << "publish!" << std::endl;
             }
             obstacle_poses_pub_.publish(obstacle_poses_);
             first_map_checker_ = true;
