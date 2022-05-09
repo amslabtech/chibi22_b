@@ -50,6 +50,7 @@ Localizer::Localizer():private_nh_("~")
     private_nh_.getParam("alpha_th", alpha_th_);
     private_nh_.getParam("alpha_slow_th", alpha_slow_th_);
     private_nh_.getParam("alpha_fast_th", alpha_fast_th_);
+    private_nh_.getParam("use_new_dist_on_map", use_new_dist_on_map_);
     private_nh_.getParam("is_visible", is_visible_);
 
     // Subscriber
@@ -191,8 +192,13 @@ double Localizer::calc_weight(Particle& p)
     {
         if(laser_.ranges[i] > laser_ignore_range_)
         {
-            double map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), angle);
-            // double map_dist = new_dist_on_map(p.get_pose_x(), p.get_pose_y(), laser_.ranges[i], angle);
+            double map_dist = 0.0;
+
+            if(use_new_dist_on_map_)
+                map_dist = new_dist_on_map(p.get_pose_x(), p.get_pose_y(), laser_.ranges[i], angle);
+            else
+                map_dist = dist_on_map(p.get_pose_x(), p.get_pose_y(), angle);
+
             double sigma = laser_.ranges[i] * laser_dev_per_dist_;
 
             weight += likelihood(map_dist, laser_.ranges[i], sigma);
