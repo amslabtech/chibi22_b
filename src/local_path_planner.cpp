@@ -143,10 +143,12 @@ std::vector<double> DWA::calc_final_input()
         for(double yawrate=dw_.min_yawrate; yawrate<=dw_.max_yawrate; yawrate+=yawrate_reso_)
         {
 
-            /* if(velocity<vel_reso_/2.0 && abs(yawrate)<yawrate_reso_*3.0/2.0) */
-            /*     continue; */
-            /* else if(yawrate_reso_/2.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_*5.0/2.0 && mode_==1) */
-            /*     continue; */
+            if(velocity<vel_reso_*0.5 && abs(yawrate)<yawrate_reso_*4.5)
+                continue;
+            else if(yawrate_reso_*0.5 < yawrate && yawrate<=yawrate_reso_*1.5 && mode_==1)
+                continue;
+            else if(-yawrate_reso_*4.5 < yawrate && yawrate<=-yawrate_reso_*0.5 && mode_==1)
+                continue;
 
             const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
             const double score = calc_evaluation(trajectory); // 予測軌跡に対する評価値の計算
@@ -187,8 +189,8 @@ std::vector<double> DWA::calc_final_input()
 // 旋回状況に応じた減速機能
 void DWA::change_mode()
 {
-    /* if(abs(roomba_.yawrate)>turn_thres_yawrate_ || roomba_.velocity<avoid_thres_vel_) */
-    if(abs(roomba_.yawrate)>turn_thres_yawrate_)
+    // if(abs(roomba_.yawrate)>turn_thres_yawrate_)
+    if(abs(roomba_.yawrate)>turn_thres_yawrate_ || roomba_.velocity<avoid_thres_vel_)
         mode_log_.push_back(2.0); // 減速モード
     else
         mode_log_.push_back(1.0);

@@ -14,7 +14,7 @@
     <node pkg="chibi22_b" type="local_goal_creator" name="local_goal_creator">
         <param  name="local_goal_dist" value="2.15"/>
     </node>
-    <node pkg="chibi22_b" type="local_map_creator" name="local_map_creator" output="screen">
+    <node pkg="chibi22_b" type="local_map_creator" name="local_map_creator">
         <!-- <param name="flag_map_view" value="0"/> -->
         <!-- &#60;&#33;&#45;&#45; <param name="flag_map_view" value="true"/> &#45;&#45;&#62; -->
         <!-- <param name="flag_pose_callback" value="0"/> -->
