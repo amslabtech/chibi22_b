@@ -8,7 +8,7 @@ hz: 10 # [Hz]
 # 速度制限
 max_vel1: 0.50            # [m/s]（平常時）
 max_vel2: 0.3             # [m/s]（減速時）
-avoid_thres_vel: 0.17     # [m/s]（回避中か判断する閾値）
+avoid_thres_vel: 0.46     # [m/s]（回避中か判断する閾値）
 min_vel: 0.0              # [m/s]
 max_yawrate1: 1.0         # [rad/s]（平常時）
 max_yawrate2: 0.6         # [rad/s]（減速時）
@@ -26,7 +26,8 @@ yawrate_reso: 0.1 # [rad/s]
 
 # 時間 [s]
 dt: 0.1
-predict_time: 3.0
+predict_time1: 2.0
+predict_time2: 4.5
 
 # 機体サイズ(半径) [m]
 roomba_radius: 0.17
@@ -38,7 +39,7 @@ weight_heading1: 0.7 #（平常時）
 weight_heading2: 0.2 #（減速時）
 weight_dist1: 0.65   #（平常時）
 weight_dist2: 0.3    #（減速時）
-weight_vel: 1.0
+weight_vel: 0.5
 
 # 許容誤差 [m]
 goal_tolerance: 0.5

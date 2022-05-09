@@ -26,7 +26,8 @@ DWA::DWA():private_nh_("~")
     private_nh_.getParam("vel_reso", vel_reso_);
     private_nh_.getParam("yawrate_reso", yawrate_reso_);
     private_nh_.getParam("dt", dt_);
-    private_nh_.getParam("predict_time", predict_time_);
+    private_nh_.getParam("predict_time1", predict_time1_);
+    private_nh_.getParam("predict_time2", predict_time2_);
     private_nh_.getParam("roomba_radius", roomba_radius_);
     private_nh_.getParam("radius_margin1", radius_margin1_);
     private_nh_.getParam("radius_margin2", radius_margin2_);
@@ -144,7 +145,7 @@ std::vector<double> DWA::calc_final_input()
 
             if(velocity<vel_reso_/2.0 && abs(yawrate)<yawrate_reso_*3.0/2.0)
                 continue;
-            else if(yawrate_reso_/2.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_*3.0/2.0 && mode_==1)
+            else if(yawrate_reso_/2.0 < abs(yawrate) && abs(yawrate)<=yawrate_reso_*5.0/2.0 && mode_==1)
                 continue;
 
             const std::vector<State> trajectory = calc_traj(velocity, yawrate); // 予測軌跡の生成
@@ -190,6 +191,7 @@ void DWA::change_mode()
         mode_log_.push_back(2.0);
     else
         mode_log_.push_back(1.0);
+        // mode_log_.push_back(2.0);
 
     if(mode_log_.size() > hz_*mode_log_time_)
         mode_log_.erase(mode_log_.begin());
@@ -213,6 +215,7 @@ void DWA::change_mode()
         radius_margin_  = radius_margin1_;
         weight_heading_ = weight_heading1_;
         weight_dist_    = weight_dist1_;
+        predict_time_   = predict_time1_;
         std::cout << "減速OFF" << std::endl;
     }
     else // 減速時
@@ -223,6 +226,7 @@ void DWA::change_mode()
         radius_margin_  = radius_margin2_;
         weight_heading_ = weight_heading2_;
         weight_dist_    = weight_dist2_;
+        predict_time_   = predict_time2_;
         std::cout << "減速ON" << std::endl;
     }
 }

@@ -91,6 +91,8 @@ private:
     double yawrate_reso_;       // 旋回速度解像度 [rad/s]
     double dt_;                 // 微小時間 [s]
     double predict_time_;       // 軌跡予測時間 [s]
+    double predict_time1_;       // 軌跡予測時間 [s]
+    double predict_time2_;       // 軌跡予測時間 [s]
     double roomba_radius_;      // Roombaのサイズ(半径) [m]
     double radius_margin_;      // 半径の余白 [m]（計算用）
     double radius_margin1_;     // 半径の余白 [m]（平常時）
