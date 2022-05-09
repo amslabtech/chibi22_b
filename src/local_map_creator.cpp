@@ -30,7 +30,10 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
 void LocalMapCreator::laser_callback(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
     laser_ = *msg;
-    init_map();
+    if(flag_map_view_)
+    {
+        init_map();
+    }
     create_local_map();
     is_laser_checker_ = true;
 }
@@ -149,7 +152,7 @@ bool LocalMapCreator::is_range_checker(double laser_range)
 }
 
 //角度ごとにマップを作成
-void LocalMapCreator::create_line(double angle, double laser_range, bool first_map_checker_)
+void LocalMapCreator::create_line(double angle, double laser_range)
 {
     if(!is_ignore_angle_checker(angle))
     {
@@ -251,7 +254,7 @@ void LocalMapCreator::create_local_map()
     for(int i=0; i<int(laser_.ranges.size()); i+=angle_step)
     {
         double angle = i * laser_.angle_increment + laser_.angle_min;
-        create_line(angle, laser_.ranges[i], first_map_checker_);
+        create_line(angle, laser_.ranges[i]);
     }
     blind_obstacle_poses_.poses.clear();
 }
@@ -266,9 +269,10 @@ void LocalMapCreator::process()
             if(flag_map_view_)
             {
                 local_map_pub_.publish(local_map_);
+                std::cout << "publish!" << std::endl;
             }
             obstacle_poses_pub_.publish(obstacle_poses_);
-            // first_map_checker_ = true;
+            first_map_checker_ = true;
         }
         ros::spinOnce();
         loop_rate.sleep();
