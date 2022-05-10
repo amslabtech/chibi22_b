@@ -1,13 +1,13 @@
-#ifndef OBSTACLE_EXPAND_H
-#define OBSTACLE_EXPAND_H
+#ifndef OBSTACLE_EXPANDER_H
+#define OBSTACLE_EXPANDER_H
 #include<ros/ros.h>
 #include "nav_msgs/OccupancyGrid.h"
 
 // ====クラス====
-class Obstacle_Expand
+class Obstacle_Expander
 {
 public:
-    Obstacle_Expand();                                  //デフォルトコンストラクタ
+    Obstacle_Expander();                                  //デフォルトコンストラクタ
     void process();
 
 private:
