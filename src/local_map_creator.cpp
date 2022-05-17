@@ -8,8 +8,8 @@ LocalMapCreator::LocalMapCreator():private_nh_("~")
     private_nh_.param("roomba_radius", roomba_radius_, {0.2});
     private_nh_.param("flag_map_view", flag_map_view_, {true});
     // private_nh_.param("flag_map_view", flag_map_view_, {false});
-    private_nh_.param("flag_pose_callback", flag_pose_callback_, {true});
-    // private_nh_.param("flag_pose_callback", flag_pose_callback_, {false});
+    // private_nh_.param("flag_pose_callback", flag_pose_callback_, {true});
+    private_nh_.param("flag_pose_callback", flag_pose_callback_, {false});
     // private_nh_.param("flag_odo_callback", flag_odo_callback_, {true});
     private_nh_.param("flag_odo_callback", flag_odo_callback_, {false});
 

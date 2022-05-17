@@ -3,9 +3,10 @@ Panels:
     Help Height: 168
     Name: Displays
     Property Tree Widget:
-      Expanded: ~
+      Expanded:
+        - /Pose1
       Splitter Ratio: 0.5
-    Tree Height: 310
+    Tree Height: 273
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -168,7 +169,7 @@ Visualization Manager:
       Axes Length: 0.30000001192092896
       Axes Radius: 0.009999999776482582
       Class: rviz/PoseArray
-      Color: 255; 25; 0
+      Color: 173; 127; 168
       Enabled: true
       Head Length: 0.07000000029802322
       Head Radius: 0.029999999329447746
@@ -184,7 +185,7 @@ Visualization Manager:
       Axes Length: 1
       Axes Radius: 0.10000000149011612
       Class: rviz/Pose
-      Color: 255; 25; 0
+      Color: 245; 121; 0
       Enabled: true
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
@@ -262,7 +263,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 21.973876953125
+      Distance: 23.777881622314453
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -270,9 +271,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 5.370906352996826
-        Y: 1.6663851737976074
-        Z: -12.620011329650879
+        X: 5.053198337554932
+        Y: 0.8406170010566711
+        Z: -12.62084674835205
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
