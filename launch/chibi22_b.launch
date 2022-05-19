@@ -2,7 +2,6 @@
 <launch>
     <!-- yaml file path -->
     <arg name="map_file" default="$(find chibi22_b)/map/map.yaml"/>
-    <!-- <arg name="global_path_planner_settings" default="$(find chibi22_b)/config/param/global_path_planner.yaml"/> -->
     <arg name="local_path_planner_settings" default="$(find chibi22_b)/config/param/local_path_planner.yaml"/>
     <arg name="localizer_settings" default="$(find chibi22_b)/config/param/localizer.yaml"/>
 
